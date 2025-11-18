@@ -1,20 +1,20 @@
 # Model loading and prediction functions
-# This file handles loading the AI model and making predictions
+# This file handles loading the AI model from HuggingFace Hub
 
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from .labels import EMOTIONS
 
-# Load model and tokenizer once globally for performance
-MODEL_PATH = "./emotion_bert_model"
+# Load model from HuggingFace Hub
+MODEL_ID = "Amarnoor/emotion-bert-emosense"
 
 try:
-    print(f"Loading tokenizer from {MODEL_PATH}...")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+    print(f"Loading tokenizer from HuggingFace Hub: {MODEL_ID}...")
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     
-    print(f"Loading model from {MODEL_PATH}...")
+    print(f"Loading model from HuggingFace Hub: {MODEL_ID}...")
     model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_PATH, 
+        MODEL_ID,
         trust_remote_code=True
     )
     
@@ -34,8 +34,8 @@ try:
     
 except Exception as e:
     raise RuntimeError(
-        f"Failed to load HuggingFace model from ./emotion_bert_model. "
-        f"Ensure pytorch_model.bin and config.json are present. Error: {str(e)}"
+        f"Failed to load HuggingFace model from {MODEL_ID}. "
+        f"Ensure the model exists on HuggingFace Hub and you have internet connection. Error: {str(e)}"
     )
 
 
