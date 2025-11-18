@@ -1,5 +1,6 @@
 # Main Streamlit UI
 # Emotion Analysis Chatbot using BERT
+# Version 1.1 - Fixed HuggingFace Hub loading
 
 import streamlit as st
 import pandas as pd
