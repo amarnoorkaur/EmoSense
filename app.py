@@ -5,6 +5,8 @@
 import streamlit as st
 import pandas as pd
 import io
+import matplotlib.pyplot as plt
+from collections import Counter
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
 
@@ -101,6 +103,165 @@ def get_user_comments():
                 st.error(f"❌ Error processing pasted text: {str(e)}")
     
     return comments
+
+
+def render_emotion_dashboard(results_df):
+    """
+    Render analytics dashboard for emotion distribution analysis.
+    
+    Args:
+        results_df: DataFrame with columns ['comment', 'emotion']
+    """
+    if results_df is None or len(results_df) == 0:
+        st.warning("⚠️ No data available to display dashboard")
+        return
+    
+    # Clean emotion labels (remove emojis and extra formatting)
+    df = results_df.copy()
+    
+    # Extract clean emotion names from "Top Emotion" column if it has emojis
+    if 'Top Emotion' in df.columns:
+        df['emotion'] = df['Top Emotion'].str.split().str[-1].str.lower()
+    elif 'emotion' not in df.columns:
+        st.error("❌ DataFrame must have either 'emotion' or 'Top Emotion' column")
+        return
+    
+    # Filter out errors
+    df = df[df['emotion'] != 'error']
+    
+    if len(df) == 0:
+        st.warning("⚠️ No valid emotion data to display")
+        return
+    
+    st.markdown("---")
+    st.header("📊 Emotion Analytics Dashboard")
+    
+    # Count emotions
+    emotion_counts = df['emotion'].value_counts()
+    total_comments = len(df)
+    
+    # Calculate percentages
+    emotion_percentages = (emotion_counts / total_comments * 100).round(1)
+    
+    # Combine counts and percentages
+    emotion_stats = pd.DataFrame({
+        'Emotion': emotion_counts.index,
+        'Count': emotion_counts.values,
+        'Percentage': emotion_percentages.values
+    })
+    
+    # === TOP 4 EMOTIONS ===
+    st.subheader("🏆 Top 4 Dominant Emotions")
+    top_4 = emotion_stats.head(4)
+    
+    cols = st.columns(4)
+    for idx, (_, row) in enumerate(top_4.iterrows()):
+        with cols[idx]:
+            emoji = EMOJI_MAP.get(row['Emotion'], '🎭')
+            st.metric(
+                label=f"{emoji} {row['Emotion'].capitalize()}",
+                value=f"{row['Count']} comments",
+                delta=f"{row['Percentage']}%"
+            )
+    
+    st.markdown("---")
+    
+    # === SUMMARY NARRATIVE ===
+    try:
+        top_emotions_text = ", ".join([
+            f"{row['Emotion']} ({row['Percentage']}%)" 
+            for _, row in top_4.head(3).iterrows()
+        ])
+        
+        st.info(
+            f"📝 **Summary:** Out of {total_comments:,} comments analyzed, "
+            f"the dominant emotions were **{top_emotions_text}**."
+        )
+    except Exception as e:
+        st.info(f"📝 **Summary:** Analyzed {total_comments:,} comments successfully.")
+    
+    st.markdown("---")
+    
+    # === VISUALIZATIONS ===
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("📊 Emotion Distribution (Bar Chart)")
+        try:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            
+            # Bar chart
+            bars = ax.bar(emotion_stats['Emotion'], emotion_stats['Count'], color='steelblue', alpha=0.7)
+            
+            # Add value labels on bars
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height,
+                       f'{int(height)}',
+                       ha='center', va='bottom', fontsize=9)
+            
+            ax.set_xlabel('Emotion', fontsize=12, fontweight='bold')
+            ax.set_ylabel('Number of Comments', fontsize=12, fontweight='bold')
+            ax.set_title('Comment Count by Emotion', fontsize=14, fontweight='bold', pad=20)
+            plt.xticks(rotation=45, ha='right')
+            plt.tight_layout()
+            
+            st.pyplot(fig)
+            plt.close()
+            
+        except Exception as e:
+            st.error(f"Error creating bar chart: {str(e)}")
+    
+    with col2:
+        st.subheader("🥧 Emotion Percentage (Pie Chart)")
+        try:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            
+            # Pie chart
+            wedges, texts, autotexts = ax.pie(
+                emotion_stats['Percentage'],
+                labels=emotion_stats['Emotion'],
+                autopct='%1.1f%%',
+                startangle=90,
+                textprops={'fontsize': 10}
+            )
+            
+            # Make percentage text bold
+            for autotext in autotexts:
+                autotext.set_color('white')
+                autotext.set_fontweight('bold')
+            
+            ax.set_title('Emotion Distribution by Percentage', fontsize=14, fontweight='bold', pad=20)
+            plt.tight_layout()
+            
+            st.pyplot(fig)
+            plt.close()
+            
+        except Exception as e:
+            st.error(f"Error creating pie chart: {str(e)}")
+    
+    st.markdown("---")
+    
+    # === DETAILED STATS TABLE ===
+    st.subheader("📈 Detailed Emotion Statistics")
+    
+    # Format the stats table
+    display_stats = emotion_stats.copy()
+    display_stats['Emotion'] = display_stats['Emotion'].apply(
+        lambda x: f"{EMOJI_MAP.get(x, '🎭')} {x.capitalize()}"
+    )
+    display_stats['Percentage'] = display_stats['Percentage'].apply(lambda x: f"{x}%")
+    
+    st.dataframe(
+        display_stats,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Emotion": st.column_config.TextColumn("Emotion", width="medium"),
+            "Count": st.column_config.NumberColumn("Count", width="small"),
+            "Percentage": st.column_config.TextColumn("Percentage", width="small")
+        }
+    )
 
 
 # Page configuration
@@ -218,6 +379,9 @@ if analysis_mode == "📊 Bulk Analysis":
                 mime="text/csv",
                 use_container_width=True
             )
+            
+            # === RENDER ANALYTICS DASHBOARD ===
+            render_emotion_dashboard(results_df)
 
 # ============================================================================
 # CHAT MODE (Original functionality)
