@@ -6,9 +6,22 @@ EmoSense is an AI-powered emotion analysis chatbot that uses a fine-tuned BERT m
 
 - **Real-time Emotion Detection**: Analyze text and detect 28 different emotions including joy, anger, sadness, excitement, fear, love, and more
 - **Interactive Chat Interface**: Conversational UI with chat bubbles and message history
+- **Bulk Comment Analysis**: Upload CSV files or paste multiple comments for batch processing
+- **Analytics Dashboard**: 
+  - Top 4 emotions with metric cards
+  - Bar charts showing emotion distribution
+  - Pie charts for percentage breakdown
+  - Detailed statistics table
+  - Download results as CSV
+- **AI-Powered Insights** ✨ NEW:
+  - Automated summary generation using OpenAI GPT
+  - Sentiment overview and key emotion analysis
+  - Identification of positive signals and concerns
+  - Actionable recommendations based on emotional landscape
+  - Priority actions for critical issues
+  - Download AI insights as markdown report
 - **Visual Analytics**: 
   - Colorful emotion chips with probability scores
-  - Bar charts showing top detected emotions
   - Emoji representations for each emotion
 - **Customizable Threshold**: Adjust confidence threshold to filter emotion predictions
 - **Chat History**: Persistent conversation history during your session
@@ -105,7 +118,9 @@ emosense_backend/
 │   └── config.toml            # Streamlit configuration (dark theme)
 ├── utils/
 │   ├── predict.py             # Model loading and prediction logic
-│   └── labels.py              # Emotion labels and emoji mappings
+│   ├── labels.py              # Emotion labels and emoji mappings
+│   ├── ai_summary.py          # AI-powered insights generation
+│   └── mock_predict.py        # Mock predictions for testing
 └── emotion_bert_model/        # Trained BERT model (not included in repo)
     ├── config.json
     ├── pytorch_model.bin
@@ -116,17 +131,53 @@ emosense_backend/
 
 - **Frontend**: Streamlit
 - **ML Framework**: PyTorch, Transformers (HuggingFace)
-- **Model**: BERT fine-tuned on GoEmotions dataset
+- **Model**: BERT fine-tuned on GoEmotions dataset (hosted on HuggingFace Hub)
+- **AI Insights**: OpenAI GPT-4o-mini
+- **Visualization**: Matplotlib
+- **Data Processing**: Pandas
 - **Language**: Python 3.8+
 
 ## 📊 How It Works
 
-1. User enters text in the chat interface
+### Emotion Detection
+1. User enters text in the chat interface or uploads bulk comments
 2. Text is tokenized using BERT tokenizer
 3. Model processes the input and outputs logits for 28 emotion classes
 4. Sigmoid activation converts logits to probabilities
 5. Emotions above the threshold are displayed with emojis and confidence scores
-6. Results visualized as colorful chips and bar charts
+6. Results visualized as colorful chips, bar charts, and pie charts
+
+### AI-Powered Insights
+1. After bulk analysis, emotion data is aggregated
+2. AI analyzes emotion distribution and sample comments
+3. OpenAI GPT generates professional insights including:
+   - Overall sentiment assessment
+   - Key emotion patterns
+   - Positive signals and concerns
+   - Actionable recommendations
+   - Priority actions for critical issues
+4. Report can be downloaded as markdown
+
+## ⚙️ Configuration
+
+### OpenAI API Key Setup
+
+For AI-powered insights, configure your OpenAI API key:
+
+**Option 1: Streamlit Cloud Secrets** (Recommended for deployment)
+1. Go to your app settings on Streamlit Cloud
+2. Navigate to "Secrets" section
+3. Add the following:
+   ```toml
+   OPENAI_API_KEY = "sk-your-api-key-here"
+   ```
+
+**Option 2: Local Development**
+- Set environment variable: `set OPENAI_API_KEY=sk-your-key` (Windows)
+- Or enter the key directly in the app interface (session only)
+
+**Option 3: Manual Entry**
+- Use the expandable section in the app to enter your key temporarily
 
 ## 🎨 Customization
 
@@ -137,7 +188,7 @@ Use the sidebar slider to change the minimum probability required for an emotion
 Edit `.streamlit/config.toml` to customize colors and appearance
 
 ### Change Model
-Replace the model in `emotion_bert_model/` directory or update the `MODEL_PATH` in `utils/predict.py`
+Update the `MODEL_ID` in `utils/predict.py` to use a different HuggingFace model
 
 ## 📝 License
 
