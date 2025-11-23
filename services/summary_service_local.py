@@ -89,7 +89,10 @@ def summarize_text_local(text: str) -> str:
         return f"⚠️ Error generating summary: {str(e)[:150]}"
 
 
-def combine_emotion_and_summary(emotion_output: Dict[str, Any], summary: str, original_text: str) -> Dict[str, Any]:
+def combine_emotion_and_summary(emotion_output: Dict[str, Any], 
+                               summary: str, 
+                               original_text: str,
+                               use_enhanced_ai: bool = False) -> Dict[str, Any]:
     """
     Combine emotion analysis with summary to create intelligent output
     
@@ -97,6 +100,7 @@ def combine_emotion_and_summary(emotion_output: Dict[str, Any], summary: str, or
         emotion_output: Dictionary containing emotion predictions
         summary: Generated text summary
         original_text: Original input text for context
+        use_enhanced_ai: Whether to use LLM-powered recommendations (default: False)
         
     Returns:
         Structured dictionary with combined insights
@@ -112,11 +116,57 @@ def combine_emotion_and_summary(emotion_output: Dict[str, Any], summary: str, or
     # Generate reasoning
     reasoning = generate_emotion_reasoning(summary, dominant_emotion, all_emotions)
     
-    # Get suggested action
-    suggested_action = EMOTION_ACTIONS.get(
-        dominant_emotion, 
-        "💭 **Reflect**: Take a moment to understand your emotional state and respond accordingly."
-    )
+    # Get suggested action (static or enhanced)
+    if use_enhanced_ai:
+        # Try to use enhanced AI recommendations
+        try:
+            from services.rag_service import get_rag_service, initialize_rag_with_defaults
+            from services.llm_recommendation_service import get_llm_service
+            
+            # Initialize RAG and retrieve relevant research
+            rag = initialize_rag_with_defaults()
+            research_context = rag.search_relevant_research(
+                query=summary,
+                emotion=dominant_emotion,
+                n_results=3
+            )
+            
+            # Generate LLM recommendation
+            llm_service = get_llm_service()
+            if llm_service:
+                llm_result = llm_service.generate_recommendation(
+                    summary=summary,
+                    dominant_emotion=dominant_emotion,
+                    all_emotions=all_emotions,
+                    confidence=all_emotions.get(dominant_emotion, 0.0),
+                    research_context=research_context
+                )
+                
+                suggested_action = llm_result.get("recommendation", "")
+                enhanced = True
+                sources = llm_result.get("sources", [])
+            else:
+                # Fallback to static
+                suggested_action = EMOTION_ACTIONS.get(dominant_emotion, 
+                    "💭 **Reflect**: Take a moment to understand your emotional state and respond accordingly.")
+                enhanced = False
+                sources = []
+        
+        except Exception as e:
+            # Fallback to static on any error
+            print(f"Enhanced AI failed, using static: {e}")
+            suggested_action = EMOTION_ACTIONS.get(dominant_emotion, 
+                "💭 **Reflect**: Take a moment to understand your emotional state and respond accordingly.")
+            enhanced = False
+            sources = []
+    else:
+        # Use static recommendations
+        suggested_action = EMOTION_ACTIONS.get(
+            dominant_emotion, 
+            "💭 **Reflect**: Take a moment to understand your emotional state and respond accordingly."
+        )
+        enhanced = False
+        sources = []
     
     # Create combined result
     result = {
@@ -126,7 +176,9 @@ def combine_emotion_and_summary(emotion_output: Dict[str, Any], summary: str, or
         "reasoning": reasoning,
         "suggested_action": suggested_action,
         "confidence": all_emotions.get(dominant_emotion, 0.0),
-        "detected_keywords": extract_emotion_keywords(original_text, dominant_emotion)
+        "detected_keywords": extract_emotion_keywords(original_text, dominant_emotion),
+        "enhanced": enhanced,
+        "sources": sources
     }
     
     return result
