@@ -65,13 +65,12 @@ def predict_emotions(text: str, threshold=0.3, use_emoji_boost=True):
         use_emoji_boost (bool): Whether to boost predictions with emoji signals (default: True)
     
     Returns:
-        tuple: (predicted_emotions, probabilities) for backward compatibility
-               emoji_summary is available via predict_emotions_with_emoji()
+        tuple: (predicted_emotions, probabilities, emoji_summary)
     """
     predicted_emotions, prob_dict, emoji_summary = predict_emotions_with_emoji(
         text, threshold, use_emoji_boost
     )
-    return predicted_emotions, prob_dict
+    return predicted_emotions, prob_dict, emoji_summary
 
 
 def predict_emotions_with_emoji(text: str, threshold=0.3, use_emoji_boost=True):
