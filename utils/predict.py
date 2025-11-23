@@ -67,10 +67,15 @@ def predict_emotions(text: str, threshold=0.3, use_emoji_boost=True):
     Returns:
         tuple: (predicted_emotions, probabilities, emoji_summary)
     """
-    predicted_emotions, prob_dict, emoji_summary = predict_emotions_with_emoji(
-        text, threshold, use_emoji_boost
-    )
-    return predicted_emotions, prob_dict, emoji_summary
+    try:
+        predicted_emotions, prob_dict, emoji_summary = predict_emotions_with_emoji(
+            text, threshold, use_emoji_boost
+        )
+        return predicted_emotions, prob_dict, emoji_summary
+    except Exception as e:
+        # Fallback: ensure we always return 3 values
+        print(f"⚠️ Error in predict_emotions: {e}")
+        return [], {}, {}
 
 
 def predict_emotions_with_emoji(text: str, threshold=0.3, use_emoji_boost=True):
@@ -88,7 +93,11 @@ def predict_emotions_with_emoji(text: str, threshold=0.3, use_emoji_boost=True):
     # Get emoji analysis first
     emoji_summary = {}
     if EMOJI_ANALYSIS_AVAILABLE and use_emoji_boost:
-        emoji_summary = get_emoji_summary(text)
+        try:
+            emoji_summary = get_emoji_summary(text)
+        except Exception as e:
+            print(f"⚠️ Emoji analysis failed: {e}")
+            emoji_summary = {}
     
     if USE_MOCK:
         # Mock predictions for demo
