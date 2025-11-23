@@ -7,3 +7,5 @@ pillow
 matplotlib
 safetensors
 openai
+requests
+pandas
