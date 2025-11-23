@@ -599,6 +599,30 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
     
     st.markdown("---")
     
+    # Enhanced AI Mode Toggle
+    st.markdown("### 🚀 Recommendation Mode")
+    col_mode1, col_mode2 = st.columns([3, 1])
+    
+    with col_mode1:
+        use_enhanced_ai = st.checkbox(
+            "🤖 **Enable Enhanced AI Recommendations** (uses market research + GPT-4)",
+            value=False,
+            help="When enabled, the system will use advanced AI to generate personalized recommendations based on market research data. Requires OpenAI API key."
+        )
+    
+    with col_mode2:
+        if use_enhanced_ai:
+            st.success("🧠 Enhanced")
+        else:
+            st.info("⚡ Fast")
+    
+    if use_enhanced_ai:
+        st.info("💡 **Enhanced Mode**: Generates context-aware recommendations using market research database and GPT-4. May take 5-10 seconds longer.")
+    else:
+        st.info("⚡ **Fast Mode**: Uses pre-defined recommendations for instant results.")
+    
+    st.markdown("---")
+    
     # Generate button
     if st.button("✨ Generate Emotional Summary", type="primary", use_container_width=True):
         if not input_text or len(input_text.strip()) == 0:
@@ -633,10 +657,12 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                     "probabilities": probabilities
                 }
                 
+                # Pass enhanced AI flag to combine function
                 combined_result = combine_emotion_and_summary(
                     emotion_output,
                     summary,
-                    input_text
+                    input_text,
+                    use_enhanced_ai=use_enhanced_ai
                 )
                 
                 # Step 4: Render Beautiful Output

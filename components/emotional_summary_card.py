@@ -146,7 +146,15 @@ def render_emotional_summary(result: dict):
     st.markdown("---")
     
     # Strategic Action Plan
-    st.markdown("#### 🎯 Recommended Business Actions")
+    enhanced = result.get("enhanced", False)
+    sources = result.get("sources", [])
+    
+    if enhanced:
+        st.markdown("#### 🤖 AI-Generated Strategic Recommendations")
+        st.markdown("*Powered by GPT-4 + Market Research Database*")
+    else:
+        st.markdown("#### 🎯 Recommended Business Actions")
+    
     suggested_action = result.get("suggested_action", "No action suggested")
     
     # Style the action based on emotion category
@@ -157,27 +165,16 @@ def render_emotional_summary(result: dict):
     else:
         st.info(f"**Strategic Recommendation:**\n\n{suggested_action}")
     
-    # Additional business metrics
-    st.markdown("---")
-    st.markdown("#### 📈 Social Media Performance Indicators")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        # Calculate positive score but cap at 100%
-        positive_score_raw = sum([prob for emotion, prob in all_emotions.items() if emotion in positive_emotions])
-        positive_score = min(positive_score_raw, 1.0)  # Cap at 100%
-        st.metric("Positive Sentiment", f"{positive_score:.0%}", "↑" if positive_score > 0.5 else "")
-    
-    with col2:
-        # Calculate negative score but cap at 100%
-        negative_score_raw = sum([prob for emotion, prob in all_emotions.items() if emotion in negative_emotions])
-        negative_score = min(negative_score_raw, 1.0)  # Cap at 100%
-        st.metric("Negative Sentiment", f"{negative_score:.0%}", "⚠️" if negative_score > 0.3 else "")
-    
-    with col3:
-        engagement_quality = "High" if confidence > 0.7 else "Medium" if confidence > 0.4 else "Low"
-        st.metric("Confidence Level", engagement_quality, f"{confidence:.0%}")
+    # Show sources if enhanced mode was used
+    if enhanced and sources:
+        with st.expander("📚 Research Sources Used"):
+            st.markdown("*These market research documents informed the recommendations:*")
+            for i, source in enumerate(sources, 1):
+                relevance = source.get("relevance", 0.0)
+                st.markdown(f"{i}. **{source.get('title', 'Unknown')}** "
+                          f"({source.get('category', 'General')}) "
+                          f"- Relevance: {relevance:.0%}")
+
 
 
 def render_emotional_summary_compact(result: dict):

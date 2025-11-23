@@ -9,3 +9,8 @@ safetensors
 openai
 requests
 pandas
+chromadb
+sentence-transformers
+langchain
+langchain-community
+tiktoken
