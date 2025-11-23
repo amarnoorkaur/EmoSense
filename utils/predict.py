@@ -6,6 +6,18 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from .labels import EMOTIONS
 import os
 
+# Import emoji analysis
+try:
+    from services.emoji_analysis import (
+        analyze_emoji_emotions, 
+        boost_with_emoji_signals,
+        get_emoji_summary
+    )
+    EMOJI_ANALYSIS_AVAILABLE = True
+except ImportError:
+    EMOJI_ANALYSIS_AVAILABLE = False
+    print("⚠️ Emoji analysis not available")
+
 # Load model from HuggingFace Hub
 MODEL_ID = "Amarnoor/emotion-bert-emosense"
 
@@ -43,25 +55,55 @@ except Exception as e:
     device = torch.device("cpu")  # Define device even in mock mode
 
 
-def predict_emotions(text: str, threshold=0.3):
+def predict_emotions(text: str, threshold=0.3, use_emoji_boost=True):
     """
-    Predict emotions from input text.
+    Predict emotions from input text with optional emoji signal boosting.
     
     Args:
         text (str): Input text to analyze
         threshold (float): Probability threshold for emotion detection (default: 0.3)
+        use_emoji_boost (bool): Whether to boost predictions with emoji signals (default: True)
     
     Returns:
-        tuple: (predicted_emotions, probabilities)
+        tuple: (predicted_emotions, probabilities) for backward compatibility
+               emoji_summary is available via predict_emotions_with_emoji()
     """
+    predicted_emotions, prob_dict, emoji_summary = predict_emotions_with_emoji(
+        text, threshold, use_emoji_boost
+    )
+    return predicted_emotions, prob_dict
+
+
+def predict_emotions_with_emoji(text: str, threshold=0.3, use_emoji_boost=True):
+    """
+    Predict emotions from input text with emoji analysis.
+    
+    Args:
+        text (str): Input text to analyze
+        threshold (float): Probability threshold for emotion detection (default: 0.3)
+        use_emoji_boost (bool): Whether to boost predictions with emoji signals (default: True)
+    
+    Returns:
+        tuple: (predicted_emotions, probabilities, emoji_summary)
+    """
+    # Get emoji analysis first
+    emoji_summary = {}
+    if EMOJI_ANALYSIS_AVAILABLE and use_emoji_boost:
+        emoji_summary = get_emoji_summary(text)
+    
     if USE_MOCK:
         # Mock predictions for demo
         import random
         probs = [random.uniform(0.05, 0.9) if i < 5 else random.uniform(0.01, 0.3) 
                  for i in range(len(EMOTIONS))]
         prob_dict = {emotion: float(prob) for emotion, prob in zip(EMOTIONS, probs)}
+        
+        # Apply emoji boost if available
+        if EMOJI_ANALYSIS_AVAILABLE and use_emoji_boost and emoji_summary.get("emoji_emotions"):
+            prob_dict = boost_with_emoji_signals(prob_dict, emoji_summary["emoji_emotions"])
+        
         predicted_emotions = [emotion for emotion, prob in prob_dict.items() if prob >= threshold]
-        return predicted_emotions, prob_dict
+        return predicted_emotions, prob_dict, emoji_summary
     
     # Real model prediction
     inputs = tokenizer(
@@ -82,6 +124,11 @@ def predict_emotions(text: str, threshold=0.3):
     probs = probabilities[0].cpu().numpy().tolist()
 
     prob_dict = {emotion: float(prob) for emotion, prob in zip(EMOTIONS, probs)}
+    
+    # Apply emoji boost if available
+    if EMOJI_ANALYSIS_AVAILABLE and use_emoji_boost and emoji_summary.get("emoji_emotions"):
+        prob_dict = boost_with_emoji_signals(prob_dict, emoji_summary["emoji_emotions"])
+    
     predicted_emotions = [emotion for emotion, prob in prob_dict.items() if prob >= threshold]
 
-    return predicted_emotions, prob_dict
+    return predicted_emotions, prob_dict, emoji_summary
