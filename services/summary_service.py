@@ -14,6 +14,9 @@ HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 SUMMARIZATION_MODEL = "facebook/bart-large-cnn"
 HF_API_URL = f"https://api-inference.huggingface.co/models/{SUMMARIZATION_MODEL}"
 
+# Note: Using serverless inference API (as of Nov 2024, this is the correct endpoint)
+# If you get 410 errors, the API may have changed - check https://huggingface.co/docs/api-inference
+
 # Emotion-based reasoning patterns
 EMOTION_KEYWORDS = {
     "anger": ["delay", "frustration", "annoying", "irritating", "upset", "furious", "angry", "mad"],
@@ -139,6 +142,9 @@ def summarize_text(text: str) -> str:
                 return summary if summary else "Unable to generate summary"
             return "Unexpected response format from API"
         
+        elif response.status_code == 410:
+            return "⚠️ Hugging Face API endpoint deprecated. The Inference API structure has changed. Please use the transformers library directly or check the latest API documentation at https://huggingface.co/docs/api-inference for updated endpoints."
+        
         elif response.status_code == 503:
             return "⏳ Model is loading, please try again in a moment (this can take 20-30 seconds for cold start)"
         
@@ -146,7 +152,8 @@ def summarize_text(text: str) -> str:
             return "⚠️ Invalid API key. Please check your HUGGINGFACE_API_KEY"
         
         else:
-            return f"⚠️ API Error: {response.status_code} - {response.text[:100]}"
+            error_detail = response.text[:200] if response.text else "Unknown error"
+            return f"⚠️ API Error: {response.status_code} - {error_detail}"
     
     except requests.exceptions.Timeout:
         return "⏱️ Request timed out. The model may be overloaded, please try again."

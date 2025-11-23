@@ -10,7 +10,15 @@ from collections import Counter
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
 from utils.ai_summary import generate_ai_summary
-from services.summary_service import summarize_text, combine_emotion_and_summary
+
+# Try to import local summarization, fallback to API version
+try:
+    from services.summary_service_local import summarize_text_local, combine_emotion_and_summary
+    USE_LOCAL_MODEL = True
+except:
+    from services.summary_service import summarize_text, combine_emotion_and_summary
+    USE_LOCAL_MODEL = False
+
 from components.emotional_summary_card import render_emotional_summary
 
 
@@ -607,7 +615,10 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                 
                 # Step 2: Generate Summary
                 with st.spinner("📝 Generating AI summary (this may take 20-30 seconds on first run)..."):
-                    summary = summarize_text(input_text)
+                    if USE_LOCAL_MODEL:
+                        summary = summarize_text_local(input_text)
+                    else:
+                        summary = summarize_text(input_text)
                 
                 st.success("✅ Summary generated!")
                 
@@ -679,7 +690,10 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
             with tab2:
                 # Summary-only view
                 with st.spinner("Generating summary..."):
-                    summary = summarize_text(input_text)
+                    if USE_LOCAL_MODEL:
+                        summary = summarize_text_local(input_text)
+                    else:
+                        summary = summarize_text(input_text)
                     predicted_emotions, probabilities = predict_emotions(input_text, threshold=threshold)
                 
                 st.subheader("📝 Text Summary")
