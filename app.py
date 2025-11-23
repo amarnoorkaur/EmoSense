@@ -332,7 +332,7 @@ if analysis_mode == "📊 Bulk Analysis":
                 
                 try:
                     # Call emotion prediction
-                    predicted_emotions, probabilities, emoji_signals = predict_emotions(comment, threshold=threshold)
+                    predicted_emotions, probabilities = predict_emotions(comment, threshold=threshold)
                     
                     # Get top emotion
                     if predicted_emotions:
@@ -513,7 +513,7 @@ elif analysis_mode == "💬 Chat Mode":
         
         # Get predictions
         with st.spinner("Analyzing emotions..."):
-            predicted_emotions, probabilities, emoji_signals = predict_emotions(prompt, threshold=threshold)
+            predicted_emotions, probabilities = predict_emotions(prompt, threshold=threshold)
         
         # Add assistant response to chat history
         st.session_state.messages.append({
@@ -634,26 +634,14 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
             with tab1:
                 # Step 1: Emotion Analysis
                 with st.spinner("🎭 Analyzing emotions..."):
-                    predicted_emotions, probabilities, emoji_signals = predict_emotions(input_text, threshold=threshold)
+                    predicted_emotions, probabilities = predict_emotions(input_text, threshold=threshold)
                     
                     if not predicted_emotions:
                         st.warning("No strong emotions detected. Try lowering the confidence threshold in the sidebar.")
                         predicted_emotions = ["neutral"]
                         probabilities = {"neutral": 0.5}
-                        emoji_signals = {}
                 
                 st.success("✅ Emotion analysis complete!")
-                
-                # Display detected emojis if any
-                if emoji_signals:
-                    with st.expander("😊 Detected Emojis", expanded=False):
-                        emoji_count = sum(len(emojis) for emojis in emoji_signals.values())
-                        st.caption(f"Found {emoji_count} emotion-related emoji{'s' if emoji_count != 1 else ''} that influenced the analysis")
-                        
-                        for emotion_category, emojis in emoji_signals.items():
-                            if emojis:
-                                st.write(f"**{emotion_category.replace('_', ' ').title()}**: {' '.join(emojis)}")
-
                 
                 # Step 2: Generate Summary
                 with st.spinner("📝 Generating AI summary (this may take 20-30 seconds on first run)..."):
@@ -831,7 +819,7 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                         summary = summarize_text_local(input_text)
                     else:
                         summary = summarize_text(input_text)
-                    predicted_emotions, probabilities, emoji_signals = predict_emotions(input_text, threshold=threshold)
+                    predicted_emotions, probabilities = predict_emotions(input_text, threshold=threshold)
                 
                 st.subheader("📝 Customer Feedback Summary")
                 st.info(summary)
