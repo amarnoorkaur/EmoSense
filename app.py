@@ -650,8 +650,9 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                 positive_emotions = ["joy", "love", "gratitude", "admiration", "excitement", "optimism", "pride", "relief"]
                 negative_emotions = ["anger", "sadness", "fear", "disappointment", "disgust", "annoyance", "disapproval", "embarrassment"]
                 
-                positive_score = sum([prob for emotion, prob in combined_result['all_emotions'].items() if emotion in positive_emotions])
-                negative_score = sum([prob for emotion, prob in combined_result['all_emotions'].items() if emotion in negative_emotions])
+                # Calculate sentiment scores and cap at 100%
+                positive_score = min(sum([prob for emotion, prob in combined_result['all_emotions'].items() if emotion in positive_emotions]), 1.0)
+                negative_score = min(sum([prob for emotion, prob in combined_result['all_emotions'].items() if emotion in negative_emotions]), 1.0)
                 
                 if combined_result['dominant_emotion'] in positive_emotions:
                     sentiment_status = "Positive"

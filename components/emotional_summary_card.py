@@ -164,11 +164,15 @@ def render_emotional_summary(result: dict):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        positive_score = sum([prob for emotion, prob in all_emotions.items() if emotion in positive_emotions])
+        # Calculate positive score but cap at 100%
+        positive_score_raw = sum([prob for emotion, prob in all_emotions.items() if emotion in positive_emotions])
+        positive_score = min(positive_score_raw, 1.0)  # Cap at 100%
         st.metric("Positive Sentiment", f"{positive_score:.0%}", "↑" if positive_score > 0.5 else "")
     
     with col2:
-        negative_score = sum([prob for emotion, prob in all_emotions.items() if emotion in negative_emotions])
+        # Calculate negative score but cap at 100%
+        negative_score_raw = sum([prob for emotion, prob in all_emotions.items() if emotion in negative_emotions])
+        negative_score = min(negative_score_raw, 1.0)  # Cap at 100%
         st.metric("Negative Sentiment", f"{negative_score:.0%}", "⚠️" if negative_score > 0.3 else "")
     
     with col3:
