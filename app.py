@@ -332,7 +332,7 @@ if analysis_mode == "📊 Bulk Analysis":
                 
                 try:
                     # Call emotion prediction
-                    predicted_emotions, probabilities = predict_emotions(comment, threshold=threshold)
+                    predicted_emotions, probabilities, emoji_signals = predict_emotions(comment, threshold=threshold)
                     
                     # Get top emotion
                     if predicted_emotions:
@@ -513,7 +513,7 @@ elif analysis_mode == "💬 Chat Mode":
         
         # Get predictions
         with st.spinner("Analyzing emotions..."):
-            predicted_emotions, probabilities = predict_emotions(prompt, threshold=threshold)
+            predicted_emotions, probabilities, emoji_signals = predict_emotions(prompt, threshold=threshold)
         
         # Add assistant response to chat history
         st.session_state.messages.append({
@@ -831,7 +831,7 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                         summary = summarize_text_local(input_text)
                     else:
                         summary = summarize_text(input_text)
-                    predicted_emotions, probabilities = predict_emotions(input_text, threshold=threshold)
+                    predicted_emotions, probabilities, emoji_signals = predict_emotions(input_text, threshold=threshold)
                 
                 st.subheader("📝 Customer Feedback Summary")
                 st.info(summary)
