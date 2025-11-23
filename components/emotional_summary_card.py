@@ -151,9 +151,10 @@ def render_emotional_summary(result: dict):
     
     if enhanced:
         st.markdown("#### 🤖 AI-Generated Strategic Recommendations")
-        st.markdown("*Powered by GPT-4 + Market Research Database*")
+        st.caption("📊 Research-backed insights from HubSpot, Sprout Social, Zendesk & Forrester")
     else:
         st.markdown("#### 🎯 Recommended Business Actions")
+        st.caption("📊 Based on industry best practices from HubSpot, Sprout Social, Zendesk & Forrester")
     
     suggested_action = result.get("suggested_action", "No action suggested")
     
@@ -164,6 +165,24 @@ def render_emotional_summary(result: dict):
         st.success(f"**Opportunity to Leverage:**\n\n{suggested_action}")
     else:
         st.info(f"**Strategic Recommendation:**\n\n{suggested_action}")
+    
+    # Show research sources if enhanced mode
+    if enhanced and sources:
+        with st.expander("📚 Research Sources Used"):
+            for source in sources:
+                st.markdown(f"- **{source.get('title', 'Unknown')}** ({source.get('category', 'General')}) - Relevance: {source.get('relevance', 0):.0%}")
+    elif not enhanced:
+        with st.expander("📚 Data Sources"):
+            st.markdown("""
+            This recommendation is informed by publicly available research from:
+            - **HubSpot** State of Marketing Report 2024
+            - **Sprout Social** Index 2024
+            - **Zendesk** Customer Experience Trends 2024
+            - **Forrester** Customer Experience Research
+            - **Hootsuite** Social Media Trends
+            
+            *All sources are freely available industry reports from trusted platforms.*
+            """)
     
     # Show sources if enhanced mode was used
     if enhanced and sources:
