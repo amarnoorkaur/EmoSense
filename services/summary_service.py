@@ -27,19 +27,23 @@ EMOTION_KEYWORDS = {
     "disappointment": ["disappointed", "let down", "failed", "unmet expectations", "dissatisfied"]
 }
 
-# Suggested actions based on emotions
+# Suggested actions based on emotions - BUSINESS SOCIAL MEDIA FOCUSED
 EMOTION_ACTIONS = {
-    "anger": "🔥 **De-escalation Recommended**: Take a deep breath, step away if possible, and address the issue when calm.",
-    "sadness": "🌱 **Grounding Exercise**: Practice mindfulness, reach out to support networks, or engage in self-care activities.",
-    "joy": "✨ **Positive Reinforcement**: Celebrate this moment! Share your happiness and acknowledge what went well.",
-    "fear": "🛡️ **Reassurance Needed**: Identify specific concerns, gather information, and create an action plan.",
-    "confusion": "💡 **Clarification Required**: Break down the issue into smaller parts, ask questions, and seek clear explanations.",
-    "disappointment": "🔄 **Reflection & Reset**: Acknowledge the feeling, learn from the experience, and set new realistic goals.",
-    "excitement": "🎉 **Channel Energy**: Use this momentum productively and share your enthusiasm with others.",
-    "nervousness": "🧘 **Calm & Prepare**: Practice relaxation techniques and focus on preparation rather than worry.",
-    "optimism": "🌟 **Maintain Momentum**: Keep this positive outlook and use it to inspire action and perseverance.",
-    "gratitude": "🙏 **Express Appreciation**: Share your gratitude with others and reflect on what you're thankful for.",
-    "neutral": "⚖️ **Balanced State**: Continue with your current approach and monitor for any emotional shifts."
+    "anger": "🔥 **Customer Concern Alert**: Negative sentiment detected. **Action**: Respond promptly with empathy, acknowledge the issue, and offer a solution. Consider damage control if this is widespread.",
+    "sadness": "😔 **Disappointment Detected**: Customers feel let down. **Action**: Show empathy, understand their concerns, and work to restore trust. Offer personalized support or compensation if appropriate.",
+    "joy": "🎉 **Positive Engagement Success**: Strong positive reactions! **Action**: Amplify this content, thank engaged customers, and create similar content. This is working well for your brand.",
+    "fear": "😰 **Customer Anxiety Detected**: Concerns or worries present. **Action**: Provide clear reassurance, transparent communication, and address uncertainties. Build trust through detailed information.",
+    "confusion": "🤔 **Clarity Needed**: Customers don't understand your message. **Action**: Simplify your communication, provide FAQs, create explainer content, or offer customer support channels.",
+    "disappointment": "😞 **Unmet Expectations**: Customers expected more. **Action**: Acknowledge feedback, explain what went wrong, and show how you're improving. Rebuild trust through transparency.",
+    "excitement": "✨ **High Enthusiasm**: Customers are excited about your product/content! **Action**: Capitalize on this momentum with launch campaigns, user-generated content, or early access programs.",
+    "nervousness": "😬 **Hesitation Detected**: Potential customers are uncertain. **Action**: Provide social proof (testimonials, reviews), risk-free guarantees, or trial periods to reduce anxiety.",
+    "optimism": "🌟 **Positive Outlook**: Customers are hopeful about your brand. **Action**: Maintain this momentum, deliver on promises, and keep positive communication flowing.",
+    "gratitude": "🙏 **Customer Appreciation**: Customers are thankful! **Action**: Show reciprocal appreciation, feature customer testimonials, and maintain this positive relationship.",
+    "admiration": "👏 **Brand Respect Earned**: Customers admire your brand/product. **Action**: Leverage this for case studies, testimonials, and brand ambassadors. This is strong brand equity.",
+    "love": "❤️ **Brand Loyalty**: Strong emotional connection detected. **Action**: Nurture these brand advocates, create VIP programs, and encourage referrals. These are your most valuable customers.",
+    "curiosity": "🔍 **Interest & Inquiry**: Customers want to know more. **Action**: Provide detailed content, product demos, FAQs, or webinars. Convert curiosity into engagement.",
+    "surprise": "😮 **Unexpected Reactions**: Mixed or surprised responses. **Action**: Clarify your message, understand if this surprise is positive or negative, and adjust communication accordingly.",
+    "neutral": "⚖️ **Neutral Sentiment**: No strong emotional reaction. **Action**: Your content may need more emotional appeal. Consider storytelling, user stories, or more engaging visuals to drive emotion."
 }
 
 
