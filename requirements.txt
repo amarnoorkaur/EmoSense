@@ -5,6 +5,7 @@ numpy
 huggingface_hub
 pillow
 matplotlib
+plotly
 safetensors
 openai
 requests

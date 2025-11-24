@@ -18,7 +18,12 @@ import json
 import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-import plotly.graph_objects as go
+
+try:
+    import plotly.graph_objects as go
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
 
 # Components
 from components.layout import (
@@ -325,6 +330,20 @@ def render_emotion_distribution_chart(emotions: Dict[str, float]):
     """Render emotion distribution bar chart"""
     sorted_emotions = sorted(emotions.items(), key=lambda x: x[1], reverse=True)[:10]
     
+    if not PLOTLY_AVAILABLE:
+        # Fallback: Simple text display
+        st.markdown("### Top 10 Detected Emotions")
+        for emotion, prob in sorted_emotions:
+            emoji = EMOJI_MAP.get(emotion, "🎭")
+            st.markdown(f"""
+            <div style="display: flex; justify-content: space-between; padding: 8px; 
+                        background: rgba(255,255,255,0.05); margin: 4px 0; border-radius: 8px;">
+                <span style="color: #FFFFFF;">{emoji} {emotion.capitalize()}</span>
+                <span style="color: #8A5CF6; font-weight: bold;">{prob*100:.1f}%</span>
+            </div>
+            """, unsafe_allow_html=True)
+        return
+    
     emotion_names = [e[0].capitalize() for e in sorted_emotions]
     emotion_values = [e[1] * 100 for e in sorted_emotions]
     emotion_emojis = [EMOJI_MAP.get(e[0], "🎭") for e in sorted_emotions]
@@ -363,6 +382,28 @@ def render_emotion_distribution_chart(emotions: Dict[str, float]):
 
 def render_sentiment_pie_chart(sentiments: Dict[str, float]):
     """Render sentiment pie chart"""
+    if not PLOTLY_AVAILABLE:
+        # Fallback: Simple progress bars
+        st.markdown("### Sentiment Distribution")
+        
+        for label, value, color in [
+            ('Positive', sentiments.get('positive', 0), '#10B981'),
+            ('Negative', sentiments.get('negative', 0), '#EF4444'),
+            ('Neutral', sentiments.get('neutral', 0), '#6B7280')
+        ]:
+            st.markdown(f"""
+            <div style="margin: 1rem 0;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span style="color: {color};">{label}</span>
+                    <span style="color: #FFFFFF; font-weight: bold;">{value*100:.1f}%</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 20px; border-radius: 10px; overflow: hidden;">
+                    <div style="background: {color}; width: {value*100}%; height: 100%;"></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        return
+    
     labels = ['Positive', 'Negative', 'Neutral']
     values = [
         sentiments.get('positive', 0) * 100,
