@@ -1,6 +1,6 @@
 """
 EmoSense AI - Main Application with Routing
-Version 3.0 - Multi-page architecture with landing page
+Version 4.0 - Multi-page architecture with Terms & Conditions
 """
 import streamlit as st
 
@@ -8,7 +8,8 @@ import streamlit as st
 from landing_page import render_landing_page
 from pages.personal_chatbot import render_personal_chatbot
 from pages.business_chatbot import render_business_chatbot
-from pages.about import render_about_page
+from pages.About_EmoSense import render_about_emosense
+from pages.Terms_and_Conditions import render_terms_and_conditions
 
 # Page configuration
 st.set_page_config(
@@ -57,7 +58,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Navigation Bar
-col1, col2, col3, col4, col5 = st.columns([1, 2, 2, 2, 1])
+col1, col2, col3, col4, col5, col6 = st.columns([1, 2, 2, 2, 1.5, 1])
 
 with col1:
     st.markdown("### 🎭")
@@ -82,6 +83,11 @@ with col5:
         st.session_state.page = "about"
         st.rerun()
 
+with col6:
+    if st.button("📜 Terms", use_container_width=True, type="primary" if st.session_state.page == "terms" else "secondary"):
+        st.session_state.page = "terms"
+        st.rerun()
+
 st.markdown("---")
 
 # Route to appropriate page
@@ -92,7 +98,9 @@ elif st.session_state.page == "personal_chatbot":
 elif st.session_state.page == "business_chatbot":
     render_business_chatbot()
 elif st.session_state.page == "about":
-    render_about_page()
+    render_about_emosense()
+elif st.session_state.page == "terms":
+    render_terms_and_conditions()
 else:
     # Default to home
     render_landing_page()

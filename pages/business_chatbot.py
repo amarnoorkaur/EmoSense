@@ -2,6 +2,7 @@
 Business Intelligence Chatbot - Category-aware analytics
 """
 import streamlit as st
+from components.footer import render_footer
 
 def render_business_chatbot():
     """Render the business intelligence chatbot page"""
@@ -48,3 +49,7 @@ def render_business_chatbot():
     - Multi-platform integration
     - Custom reports
     """)
+    
+    # Render footer
+    render_footer()
+

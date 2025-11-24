@@ -4,6 +4,7 @@ Personal Emotion Companion - Safe space for emotional expression
 import streamlit as st
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
+from components.footer import render_footer
 import datetime
 
 def render_personal_chatbot():
@@ -193,3 +194,6 @@ def render_personal_chatbot():
                 }
             ]
             st.rerun()
+    
+    # Render footer
+    render_footer()

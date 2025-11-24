@@ -3,6 +3,7 @@ EmoSense AI - Stunning Landing Page
 Modern, premium UI with hero section and feature cards
 """
 import streamlit as st
+from components.footer import render_footer
 
 def render_landing_page():
     """Render the beautiful landing page"""
@@ -197,14 +198,6 @@ def render_landing_page():
     
     st.markdown("<br/>", unsafe_allow_html=True)
     
-    # Footer
-    st.markdown("""
-    <div style='text-align: center; color: #64748b; padding: 40px 20px; border-top: 1px solid rgba(0,0,0,0.1); margin-top: 40px;'>
-        <p style='font-size: 14px; margin-bottom: 10px;'>
-            Built with ❤️ using Streamlit, Transformers, OpenAI & ChromaDB
-        </p>
-        <p style='font-size: 12px; color: #94a3b8;'>
-            © 2025 EmoSense AI. All rights reserved.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Render footer
+    render_footer()
+
