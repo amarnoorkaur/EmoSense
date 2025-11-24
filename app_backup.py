@@ -1,6 +1,6 @@
-# Business Emotion Intelligence - EmoSense AI
-# Complete business analytics with ML models, RAG, and AI insights
-# Redesigned UI with modern layout components
+# Main Streamlit UI
+# Emotion Analysis Chatbot using BERT
+# Version 2.0 - Added Smart Emotional Summary Feature
 
 import streamlit as st
 import pandas as pd
@@ -9,12 +9,13 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import gc  # Garbage collection for memory management
 
-# Import layout components
-from components.layout import set_page_config, page_container, hero_section, spacer
-from components.footer import render_footer
-
-# Configure page
-set_page_config()
+# Configure page first
+st.set_page_config(
+    page_title="EmoSense - Emotion Analysis", 
+    page_icon="🎭",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
@@ -284,20 +285,16 @@ def render_emotion_dashboard(results_df):
     )
 
 
+# Page configuration
+st.set_page_config(
+    page_title="EmoSense - Emotion Analysis",
+    page_icon="🎭",
+    layout="centered"
+)
+
 # Initialize session state for chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-# Main container with new layout
-with page_container():
-    # Hero Section
-    hero_section(
-        title="📊 Business Emotion Intelligence",
-        subtitle="Analyze comments, detect emotions, and get AI-driven insights.",
-        detail="Upload customer feedback, reviews, or comments for comprehensive emotional analysis."
-    )
-    
-    spacer("md")
 
 # Sidebar - Mode Selection
 with st.sidebar:
@@ -896,6 +893,11 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                             delta=sentiment_indicator
                         )
 
-# Spacer and Footer
-spacer("lg")
-render_footer()
+# Footer
+st.markdown("---")
+st.markdown(
+    "<div style='text-align: center; color: #666;'>"
+    "Powered by BERT & Streamlit | Built with ❤️"
+    "</div>",
+    unsafe_allow_html=True
+)

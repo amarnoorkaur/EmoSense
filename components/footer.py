@@ -1,6 +1,6 @@
 """
 Global Footer Component for EmoSense AI
-Includes newsletter signup, copyright, and dark mode support
+Includes contact info, links, and newsletter signup
 """
 import streamlit as st
 import json
@@ -44,122 +44,40 @@ def save_subscriber(email: str):
 
 
 def render_footer():
-    """Render the global footer component"""
+    """Render the redesigned global footer component"""
     
-    # Custom CSS for footer
-    st.markdown("""
-    <style>
-    .footer-container {
-        border-top: 1px solid rgba(102, 126, 234, 0.15);
-        padding: 40px 20px 20px 20px;
-        margin-top: 60px;
-        text-align: center;
-        background: linear-gradient(180deg, transparent 0%, rgba(102, 126, 234, 0.03) 100%);
-    }
+    # Divider
+    st.markdown("---", unsafe_allow_html=True)
     
-    .footer-newsletter {
-        max-width: 500px;
-        margin: 0 auto 30px auto;
-        padding: 25px;
-        background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%);
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.08);
-    }
+    # Footer layout
+    col1, col2 = st.columns([2, 1])
     
-    .footer-newsletter h3 {
-        color: #667eea;
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
+    with col1:
+        st.markdown("**EmoSense AI** · Emotion-aware insights for humans & brands.")
+        st.markdown("Built with ❤️ by **Amarnoor Kaur**.")
     
-    .footer-newsletter p {
-        color: #64748b;
-        font-size: 14px;
-        margin-bottom: 15px;
-    }
-    
-    .footer-copyright {
-        color: #94a3b8;
-        font-size: 14px;
-        padding-top: 20px;
-    }
-    
-    .footer-copyright a {
-        color: #667eea;
-        text-decoration: none;
-        font-weight: 600;
-    }
-    
-    .footer-copyright a:hover {
-        color: #764ba2;
-    }
-    
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-        .footer-container {
-            border-top-color: rgba(255, 255, 255, 0.1);
-            background: linear-gradient(180deg, transparent 0%, rgba(102, 126, 234, 0.05) 100%);
-        }
-        
-        .footer-newsletter {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        }
-        
-        .footer-newsletter h3 {
-            color: #a5b4fc;
-        }
-        
-        .footer-newsletter p {
-            color: #cbd5e1;
-        }
-        
-        .footer-copyright {
-            color: #cbd5e1;
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Footer container
-    st.markdown('<div class="footer-container">', unsafe_allow_html=True)
-    
-    # Newsletter section
-    st.markdown("""
-    <div class="footer-newsletter">
-        <h3>📬 Stay Updated</h3>
-        <p>Get the latest EmoSense AI updates and features delivered to your inbox</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Newsletter signup form
-    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        with st.form("newsletter_form", clear_on_submit=True):
-            email = st.text_input(
-                "Email Address",
-                placeholder="your.email@example.com",
-                label_visibility="collapsed"
-            )
-            subscribe_button = st.form_submit_button("✨ Subscribe", use_container_width=True)
-            
-            if subscribe_button:
-                if email and "@" in email and "." in email:
-                    if save_subscriber(email):
-                        st.success("🎉 Thank you for subscribing! You'll hear from us soon.")
-                    else:
-                        st.info("📧 You're already subscribed!")
+        st.markdown("**Contact**")
+        st.markdown("[Email](mailto:amar.noor.work@gmail.com)")
+        # Placeholder link for LinkedIn
+        st.markdown("[LinkedIn](https://www.linkedin.com)")
+        
+        # Newsletter signup
+        email = st.text_input(
+            "Get updates (newsletter):", 
+            key='footer_newsletter', 
+            label_visibility="collapsed", 
+            placeholder="Enter your email"
+        )
+        if st.button("Notify me", key='footer_notify'):
+            # Acknowledge subscription
+            if email and "@" in email and "." in email:
+                if save_subscriber(email):
+                    st.success("Thanks! We'll keep you posted.")
                 else:
-                    st.error("❌ Please enter a valid email address")
-    
-    # Copyright
-    st.markdown("""
-    <div class="footer-copyright">
-        <p>EmoSense AI © 2025 — Built with ♥ by <a href="mailto:amar.noor.work@gmail.com">Amarnoor</a></p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+                    st.info("You're already subscribed!")
+            else:
+                st.warning("Please enter an email address.")
 
 
 # Test footer when run directly

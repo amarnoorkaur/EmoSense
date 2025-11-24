@@ -1,6 +1,6 @@
-# Business Emotion Intelligence - EmoSense AI
-# Complete business analytics with ML models, RAG, and AI insights
-# Redesigned UI with modern layout components
+﻿# Main Streamlit UI
+# Emotion Analysis Chatbot using BERT
+# Version 2.0 - Added Smart Emotional Summary Feature
 
 import streamlit as st
 import pandas as pd
@@ -9,12 +9,13 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import gc  # Garbage collection for memory management
 
-# Import layout components
-from components.layout import set_page_config, page_container, hero_section, spacer
-from components.footer import render_footer
-
-# Configure page
-set_page_config()
+# Configure page first
+st.set_page_config(
+    page_title="EmoSense - Emotion Analysis", 
+    page_icon="ðŸŽ­",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
@@ -36,7 +37,7 @@ def get_user_comments():
     Get comments from user via CSV upload or text paste.
     Returns a list of clean, non-empty comment strings.
     """
-    st.subheader("📊 Bulk Comment Analysis")
+    st.subheader("ðŸ“Š Bulk Comment Analysis")
     st.markdown("Analyze multiple comments at once from CSV file or pasted text")
     
     input_method = st.radio(
@@ -59,10 +60,10 @@ def get_user_comments():
                 # Read CSV with UTF-8 encoding
                 df = pd.read_csv(uploaded_file, encoding='utf-8')
                 
-                st.success(f"✅ File loaded: {len(df)} rows found")
+                st.success(f"âœ… File loaded: {len(df)} rows found")
                 
                 # Show preview
-                with st.expander("📋 Preview first 5 rows"):
+                with st.expander("ðŸ“‹ Preview first 5 rows"):
                     st.dataframe(df.head(), use_container_width=True)
                 
                 # Auto-detect comment column
@@ -75,7 +76,7 @@ def get_user_comments():
                         break
                 
                 if comment_column:
-                    st.info(f"🎯 Auto-detected comment column: **{comment_column}**")
+                    st.info(f"ðŸŽ¯ Auto-detected comment column: **{comment_column}**")
                 else:
                     # Let user select column
                     comment_column = st.selectbox(
@@ -93,8 +94,8 @@ def get_user_comments():
                     st.metric("Valid Comments Found", len(comments))
                     
             except Exception as e:
-                st.error(f"❌ Error reading CSV file: {str(e)}")
-                st.info("💡 Tip: Ensure your CSV is properly formatted and UTF-8 encoded")
+                st.error(f"âŒ Error reading CSV file: {str(e)}")
+                st.info("ðŸ’¡ Tip: Ensure your CSV is properly formatted and UTF-8 encoded")
     
     else:  # Paste Comment Thread
         pasted_text = st.text_area(
@@ -115,12 +116,12 @@ def get_user_comments():
                 
                 # Show preview
                 if comments:
-                    with st.expander("📋 Preview first 5 comments"):
+                    with st.expander("ðŸ“‹ Preview first 5 comments"):
                         for i, comment in enumerate(comments[:5], 1):
                             st.text(f"{i}. {comment[:100]}{'...' if len(comment) > 100 else ''}")
                 
             except Exception as e:
-                st.error(f"❌ Error processing pasted text: {str(e)}")
+                st.error(f"âŒ Error processing pasted text: {str(e)}")
     
     return comments
 
@@ -133,7 +134,7 @@ def render_emotion_dashboard(results_df):
         results_df: DataFrame with columns ['comment', 'emotion']
     """
     if results_df is None or len(results_df) == 0:
-        st.warning("⚠️ No data available to display dashboard")
+        st.warning("âš ï¸ No data available to display dashboard")
         return
     
     # Clean emotion labels (remove emojis and extra formatting)
@@ -143,18 +144,18 @@ def render_emotion_dashboard(results_df):
     if 'Top Emotion' in df.columns:
         df['emotion'] = df['Top Emotion'].str.split().str[-1].str.lower()
     elif 'emotion' not in df.columns:
-        st.error("❌ DataFrame must have either 'emotion' or 'Top Emotion' column")
+        st.error("âŒ DataFrame must have either 'emotion' or 'Top Emotion' column")
         return
     
     # Filter out errors
     df = df[df['emotion'] != 'error']
     
     if len(df) == 0:
-        st.warning("⚠️ No valid emotion data to display")
+        st.warning("âš ï¸ No valid emotion data to display")
         return
     
     st.markdown("---")
-    st.header("📊 Emotion Analytics Dashboard")
+    st.header("ðŸ“Š Emotion Analytics Dashboard")
     
     # Count emotions
     emotion_counts = df['emotion'].value_counts()
@@ -171,13 +172,13 @@ def render_emotion_dashboard(results_df):
     })
     
     # === TOP 4 EMOTIONS ===
-    st.subheader("🏆 Top 4 Dominant Emotions")
+    st.subheader("ðŸ† Top 4 Dominant Emotions")
     top_4 = emotion_stats.head(4)
     
     cols = st.columns(4)
     for idx, (_, row) in enumerate(top_4.iterrows()):
         with cols[idx]:
-            emoji = EMOJI_MAP.get(row['Emotion'], '🎭')
+            emoji = EMOJI_MAP.get(row['Emotion'], 'ðŸŽ­')
             st.metric(
                 label=f"{emoji} {row['Emotion'].capitalize()}",
                 value=f"{row['Count']} comments",
@@ -194,11 +195,11 @@ def render_emotion_dashboard(results_df):
         ])
         
         st.info(
-            f"📝 **Summary:** Out of {total_comments:,} comments analyzed, "
+            f"ðŸ“ **Summary:** Out of {total_comments:,} comments analyzed, "
             f"the dominant emotions were **{top_emotions_text}**."
         )
     except Exception as e:
-        st.info(f"📝 **Summary:** Analyzed {total_comments:,} comments successfully.")
+        st.info(f"ðŸ“ **Summary:** Analyzed {total_comments:,} comments successfully.")
     
     st.markdown("---")
     
@@ -206,7 +207,7 @@ def render_emotion_dashboard(results_df):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("📊 Emotion Distribution (Bar Chart)")
+        st.subheader("ðŸ“Š Emotion Distribution (Bar Chart)")
         try:
             fig, ax = plt.subplots(figsize=(10, 6))
             
@@ -233,7 +234,7 @@ def render_emotion_dashboard(results_df):
             st.error(f"Error creating bar chart: {str(e)}")
     
     with col2:
-        st.subheader("🥧 Emotion Percentage (Pie Chart)")
+        st.subheader("ðŸ¥§ Emotion Percentage (Pie Chart)")
         try:
             fig, ax = plt.subplots(figsize=(10, 6))
             
@@ -263,12 +264,12 @@ def render_emotion_dashboard(results_df):
     st.markdown("---")
     
     # === DETAILED STATS TABLE ===
-    st.subheader("📈 Detailed Emotion Statistics")
+    st.subheader("ðŸ“ˆ Detailed Emotion Statistics")
     
     # Format the stats table
     display_stats = emotion_stats.copy()
     display_stats['Emotion'] = display_stats['Emotion'].apply(
-        lambda x: f"{EMOJI_MAP.get(x, '🎭')} {x.capitalize()}"
+        lambda x: f"{EMOJI_MAP.get(x, 'ðŸŽ­')} {x.capitalize()}"
     )
     display_stats['Percentage'] = display_stats['Percentage'].apply(lambda x: f"{x}%")
     
@@ -284,28 +285,24 @@ def render_emotion_dashboard(results_df):
     )
 
 
+# Page configuration
+st.set_page_config(
+    page_title="EmoSense - Emotion Analysis",
+    page_icon="ðŸŽ­",
+    layout="centered"
+)
+
 # Initialize session state for chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Main container with new layout
-with page_container():
-    # Hero Section
-    hero_section(
-        title="📊 Business Emotion Intelligence",
-        subtitle="Analyze comments, detect emotions, and get AI-driven insights.",
-        detail="Upload customer feedback, reviews, or comments for comprehensive emotional analysis."
-    )
-    
-    spacer("md")
-
 # Sidebar - Mode Selection
 with st.sidebar:
-    st.header("⚙️ Settings")
+    st.header("âš™ï¸ Settings")
     
     analysis_mode = st.radio(
         "Analysis Mode:",
-        ["💬 Chat Mode", "📊 Bulk Analysis", "🧠 Smart Emotional Summary"],
+        ["ðŸ’¬ Chat Mode", "ðŸ“Š Bulk Analysis", "ðŸ§  Smart Emotional Summary"],
         help="Choose between single message chat, bulk analysis, or smart emotional summary"
     )
     
@@ -318,7 +315,7 @@ with st.sidebar:
         help="Minimum probability to display an emotion"
     )
     st.markdown("---")
-    if st.button("🗑️ Clear Chat History", use_container_width=True):
+    if st.button("ðŸ—‘ï¸ Clear Chat History", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
@@ -327,13 +324,13 @@ st.markdown("---")
 # ============================================================================
 # BULK ANALYSIS MODE
 # ============================================================================
-if analysis_mode == "📊 Bulk Analysis":
+if analysis_mode == "ðŸ“Š Bulk Analysis":
     comments = get_user_comments()
     
     if comments:
         st.markdown("---")
         
-        if st.button("🚀 Analyze All Comments", type="primary", use_container_width=True):
+        if st.button("ðŸš€ Analyze All Comments", type="primary", use_container_width=True):
             results = []
             
             # Progress bar
@@ -350,10 +347,10 @@ if analysis_mode == "📊 Bulk Analysis":
                     # Get top emotion
                     if predicted_emotions:
                         top_emotion = max(probabilities.items(), key=lambda x: x[1])
-                        emotion_label = f"{EMOJI_MAP.get(top_emotion[0], '🎭')} {top_emotion[0].capitalize()}"
+                        emotion_label = f"{EMOJI_MAP.get(top_emotion[0], 'ðŸŽ­')} {top_emotion[0].capitalize()}"
                         confidence = f"{top_emotion[1]:.1%}"
                     else:
-                        emotion_label = "😐 Neutral"
+                        emotion_label = "ðŸ˜ Neutral"
                         confidence = "N/A"
                     
                     results.append({
@@ -366,19 +363,19 @@ if analysis_mode == "📊 Bulk Analysis":
                 except Exception as e:
                     results.append({
                         "Comment": comment[:100] + "..." if len(comment) > 100 else comment,
-                        "Top Emotion": "❌ Error",
+                        "Top Emotion": "âŒ Error",
                         "Confidence": "N/A",
                         "All Emotions": str(e)
                     })
                 
                 progress_bar.progress((idx + 1) / len(comments))
             
-            status_text.text("✅ Analysis complete!")
+            status_text.text("âœ… Analysis complete!")
             progress_bar.empty()
             
             # Display results
             st.markdown("---")
-            st.subheader("📈 Analysis Results")
+            st.subheader("ðŸ“ˆ Analysis Results")
             
             results_df = pd.DataFrame(results)
             st.dataframe(results_df, use_container_width=True, height=400)
@@ -388,7 +385,7 @@ if analysis_mode == "📊 Bulk Analysis":
             with col1:
                 st.metric("Total Comments", len(results))
             with col2:
-                successful = len([r for r in results if r["Top Emotion"] != "❌ Error"])
+                successful = len([r for r in results if r["Top Emotion"] != "âŒ Error"])
                 st.metric("Successfully Analyzed", successful)
             with col3:
                 errors = len(results) - successful
@@ -397,7 +394,7 @@ if analysis_mode == "📊 Bulk Analysis":
             # Download button
             csv = results_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📥 Download Results as CSV",
+                label="ðŸ“¥ Download Results as CSV",
                 data=csv,
                 file_name="emotion_analysis_results.csv",
                 mime="text/csv",
@@ -409,7 +406,7 @@ if analysis_mode == "📊 Bulk Analysis":
             
             # === AI-POWERED SUMMARY & INSIGHTS ===
             st.markdown("---")
-            st.subheader("🤖 AI-Powered Summary & Insights")
+            st.subheader("ðŸ¤– AI-Powered Summary & Insights")
             st.markdown("Get intelligent analysis and actionable recommendations powered by AI")
             
             # Get OpenAI API key from Streamlit secrets or user input
@@ -417,7 +414,7 @@ if analysis_mode == "📊 Bulk Analysis":
             if hasattr(st, 'secrets') and 'OPENAI_API_KEY' in st.secrets:
                 api_key = st.secrets['OPENAI_API_KEY']
             else:
-                with st.expander("🔑 Configure OpenAI API Key"):
+                with st.expander("ðŸ”‘ Configure OpenAI API Key"):
                     st.markdown("""
                     To use AI-powered insights, you need an OpenAI API key:
                     1. Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
@@ -426,17 +423,17 @@ if analysis_mode == "📊 Bulk Analysis":
                     """)
                     api_key = st.text_input("Enter your OpenAI API Key:", type="password", key="openai_key_input")
             
-            if st.button("✨ Generate AI Insights", type="primary", use_container_width=True):
+            if st.button("âœ¨ Generate AI Insights", type="primary", use_container_width=True):
                 if not api_key:
-                    st.warning("⚠️ Please configure your OpenAI API key to use this feature.")
+                    st.warning("âš ï¸ Please configure your OpenAI API key to use this feature.")
                 else:
-                    with st.spinner("🧠 AI is analyzing your data and generating insights..."):
+                    with st.spinner("ðŸ§  AI is analyzing your data and generating insights..."):
                         # Prepare data for AI analysis
                         ai_results_df = results_df.copy()
                         
                         # Extract primary emotion and confidence as numeric values
                         ai_results_df['Primary Emotion'] = ai_results_df['Top Emotion'].apply(
-                            lambda x: x.split()[-1].lower() if '❌' not in x else 'error'
+                            lambda x: x.split()[-1].lower() if 'âŒ' not in x else 'error'
                         )
                         ai_results_df['Confidence'] = ai_results_df['Confidence'].apply(
                             lambda x: float(x.strip('%')) / 100 if x != 'N/A' else 0.0
@@ -446,7 +443,7 @@ if analysis_mode == "📊 Bulk Analysis":
                         summary = generate_ai_summary(ai_results_df, api_key=api_key)
                         
                         # Display the summary
-                        st.markdown("### 📋 AI-Generated Insights Report")
+                        st.markdown("### ðŸ“‹ AI-Generated Insights Report")
                         st.markdown(summary)
                         
                         # Download option
@@ -465,7 +462,7 @@ Generated by EmoSense AI
 **Total Comments Analyzed:** {len(results_df)}
 """
                         st.download_button(
-                            label="📥 Download AI Insights Report",
+                            label="ðŸ“¥ Download AI Insights Report",
                             data=summary_download,
                             file_name="ai_insights_report.md",
                         mime="text/markdown",
@@ -475,14 +472,14 @@ Generated by EmoSense AI
 # ============================================================================
 # CHAT MODE (Original functionality)
 # ============================================================================
-elif analysis_mode == "💬 Chat Mode":
+elif analysis_mode == "ðŸ’¬ Chat Mode":
     # Display chat history
     for message in st.session_state.messages:
         if message["role"] == "user":
             with st.chat_message("user"):
                 st.markdown(message["content"])
         else:
-            with st.chat_message("assistant", avatar="🎭"):
+            with st.chat_message("assistant", avatar="ðŸŽ­"):
                 # Display detected emotions with emojis
                 st.markdown("**Detected Emotions:**")
                 
@@ -491,7 +488,7 @@ elif analysis_mode == "💬 Chat Mode":
                     emotion_html = ""
                     for emotion in message["emotions"]:
                         prob = message["probabilities"][emotion]
-                        emoji = EMOJI_MAP.get(emotion, '🎭')
+                        emoji = EMOJI_MAP.get(emotion, 'ðŸŽ­')
                         emotion_html += f"""
                         <span style='display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         color: white; padding: 8px 15px; border-radius: 20px; margin: 5px; font-weight: bold;'>
@@ -536,14 +533,14 @@ elif analysis_mode == "💬 Chat Mode":
         })
         
         # Display assistant response
-        with st.chat_message("assistant", avatar="🎭"):
+        with st.chat_message("assistant", avatar="ðŸŽ­"):
             st.markdown("**Detected Emotions:**")
             
             if predicted_emotions:
                 emotion_html = ""
                 for emotion in predicted_emotions:
                     prob = probabilities[emotion]
-                    emoji = EMOJI_MAP.get(emotion, '🎭')
+                    emoji = EMOJI_MAP.get(emotion, 'ðŸŽ­')
                     emotion_html += f"""
                     <span style='display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                     color: white; padding: 8px 15px; border-radius: 20px; margin: 5px; font-weight: bold;'>
@@ -570,10 +567,10 @@ elif analysis_mode == "💬 Chat Mode":
 # ============================================================================
 # SMART EMOTIONAL SUMMARY MODE - BUSINESS SOCIAL MEDIA ANALYTICS
 # ============================================================================
-elif analysis_mode == "🧠 Smart Emotional Summary":
-    st.title("🧠 Smart Social Media Analytics for Business")
+elif analysis_mode == "ðŸ§  Smart Emotional Summary":
+    st.title("ðŸ§  Smart Social Media Analytics for Business")
     st.markdown("""
-    ### 📱 Analyze Customer Reactions to Your Social Media Posts
+    ### ðŸ“± Analyze Customer Reactions to Your Social Media Posts
     
     Understand how your audience is responding to your content. Get AI-powered insights about:
     - **Customer Sentiment** - What emotions your posts are generating
@@ -582,20 +579,20 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
     - **Brand Health** - Overall emotional perception of your brand
     """)
     
-    st.info("💡 **Use Case**: Paste comments from Instagram, Facebook, Twitter, LinkedIn posts or product reviews to understand customer sentiment.")
+    st.info("ðŸ’¡ **Use Case**: Paste comments from Instagram, Facebook, Twitter, LinkedIn posts or product reviews to understand customer sentiment.")
     
     st.markdown("---")
     
     # Input text area
     input_text = st.text_area(
-        "📝 Paste Customer Comments / Reviews / Social Media Feedback:",
+        "ðŸ“ Paste Customer Comments / Reviews / Social Media Feedback:",
         height=200,
         placeholder="Example: 'Love this product! Amazing quality and fast shipping. Highly recommend!' or paste multiple comments separated by line breaks...",
         help="Paste comments from your social media posts, product reviews, or customer feedback. Works best with 50-500 words."
     )
     
     # Configuration expander
-    with st.expander("⚙️ Configuration"):
+    with st.expander("âš™ï¸ Configuration"):
         st.markdown("""
         **API Keys Required:**
         - `HUGGINGFACE_API_KEY` - For text summarization (BART model)
@@ -613,40 +610,40 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
     st.markdown("---")
     
     # Enhanced AI Mode Toggle
-    st.markdown("### 🚀 Recommendation Mode")
+    st.markdown("### ðŸš€ Recommendation Mode")
     col_mode1, col_mode2 = st.columns([3, 1])
     
     with col_mode1:
         use_enhanced_ai = st.checkbox(
-            "🤖 **Enable Enhanced AI Recommendations** (uses market research + GPT-4)",
+            "ðŸ¤– **Enable Enhanced AI Recommendations** (uses market research + GPT-4)",
             value=False,
             help="When enabled, the system will use advanced AI to generate personalized recommendations based on market research data. Requires OpenAI API key."
         )
     
     with col_mode2:
         if use_enhanced_ai:
-            st.success("🧠 Enhanced")
+            st.success("ðŸ§  Enhanced")
         else:
-            st.info("⚡ Fast")
+            st.info("âš¡ Fast")
     
     if use_enhanced_ai:
-        st.info("💡 **Enhanced Mode**: Generates context-aware recommendations using market research database and GPT-4. May take 5-10 seconds longer.")
+        st.info("ðŸ’¡ **Enhanced Mode**: Generates context-aware recommendations using market research database and GPT-4. May take 5-10 seconds longer.")
     else:
-        st.info("⚡ **Fast Mode**: Uses pre-defined recommendations for instant results.")
+        st.info("âš¡ **Fast Mode**: Uses pre-defined recommendations for instant results.")
     
     st.markdown("---")
     
     # Generate button
-    if st.button("✨ Generate Emotional Summary", type="primary", use_container_width=True):
+    if st.button("âœ¨ Generate Emotional Summary", type="primary", use_container_width=True):
         if not input_text or len(input_text.strip()) == 0:
-            st.error("⚠️ Please enter some text to analyze")
+            st.error("âš ï¸ Please enter some text to analyze")
         else:
             # Create tabs for different views
-            tab1, tab2 = st.tabs(["📊 Complete Analysis", "📝 Summary Only"])
+            tab1, tab2 = st.tabs(["ðŸ“Š Complete Analysis", "ðŸ“ Summary Only"])
             
             with tab1:
                 # Step 1: Emotion Analysis
-                with st.spinner("🎭 Analyzing emotions..."):
+                with st.spinner("ðŸŽ­ Analyzing emotions..."):
                     predicted_emotions, probabilities = predict_emotions(input_text, threshold=threshold)
                     
                     if not predicted_emotions:
@@ -654,10 +651,10 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                         predicted_emotions = ["neutral"]
                         probabilities = {"neutral": 0.5}
                 
-                st.success("✅ Emotion analysis complete!")
+                st.success("âœ… Emotion analysis complete!")
                 
                 # Step 1.5: Detect Post Category
-                with st.spinner("🧩 Detecting content category..."):
+                with st.spinner("ðŸ§© Detecting content category..."):
                     from services.post_category_classifier import (
                         detect_post_category, 
                         get_category_emoji,
@@ -685,13 +682,13 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                 """, unsafe_allow_html=True)
                 
                 # Step 2: Generate Summary
-                with st.spinner("📝 Generating AI summary (this may take 20-30 seconds on first run)..."):
+                with st.spinner("ðŸ“ Generating AI summary (this may take 20-30 seconds on first run)..."):
                     if USE_LOCAL_MODEL:
                         summary = summarize_text_local(input_text)
                     else:
                         summary = summarize_text(input_text)
                 
-                st.success("✅ Summary generated!")
+                st.success("âœ… Summary generated!")
                 
                 # Step 3: Combine Results
                 emotion_output = {
@@ -712,7 +709,7 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                 
                 # Download option
                 st.markdown("---")
-                st.subheader("💾 Export Business Analytics Report")
+                st.subheader("ðŸ’¾ Export Business Analytics Report")
                 
                 # Calculate business metrics
                 positive_emotions = ["joy", "love", "gratitude", "admiration", "excitement", "optimism", "pride", "relief"]
@@ -739,7 +736,7 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
 
 ---
 
-## 📊 Executive Summary
+## ðŸ“Š Executive Summary
 
 **Brand Health Status:** {brand_health}
 **Overall Sentiment:** {sentiment_status}
@@ -747,13 +744,13 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
 
 ---
 
-## 📝 Customer Feedback Summary
+## ðŸ“ Customer Feedback Summary
 
 {combined_result['summary']}
 
 ---
 
-## 💡 Key Insights
+## ðŸ’¡ Key Insights
 
 **Why These Emotions Were Detected:**
 {combined_result['reasoning']}
@@ -763,7 +760,7 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
 
 ---
 
-## 📈 Sentiment Metrics
+## ðŸ“ˆ Sentiment Metrics
 
 - **Positive Sentiment Score:** {positive_score:.1%}
 - **Negative Sentiment Score:** {negative_score:.1%}
@@ -771,7 +768,7 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
 
 ---
 
-## 🎭 Detailed Emotion Breakdown
+## ðŸŽ­ Detailed Emotion Breakdown
 
 """
                 for emotion, prob in sorted(combined_result['all_emotions'].items(), key=lambda x: x[1], reverse=True):
@@ -781,19 +778,19 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                 download_data += f"""
 ---
 
-## 🎯 Recommended Business Actions
+## ðŸŽ¯ Recommended Business Actions
 
 {combined_result['suggested_action']}
 
 ---
 
-## 📋 Original Customer Feedback
+## ðŸ“‹ Original Customer Feedback
 
 {input_text}
 
 ---
 
-## 📊 Performance Indicators
+## ðŸ“Š Performance Indicators
 
 - **Engagement Quality:** {"High" if combined_result['confidence'] > 0.7 else "Medium" if combined_result['confidence'] > 0.4 else "Low"}
 - **Response Priority:** {"Immediate" if negative_score > 0.5 else "Normal" if negative_score > 0.3 else "Low"}
@@ -808,7 +805,7 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                 col1, col2 = st.columns(2)
                 with col1:
                     st.download_button(
-                        label="📥 Download Business Report (MD)",
+                        label="ðŸ“¥ Download Business Report (MD)",
                         data=download_data,
                         file_name=f"social_media_analytics_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.md",
                         mime="text/markdown",
@@ -847,7 +844,7 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                     
                     json_data = json.dumps(business_json, indent=2)
                     st.download_button(
-                        label="📥 Download Analytics Data (JSON)",
+                        label="ðŸ“¥ Download Analytics Data (JSON)",
                         data=json_data,
                         file_name=f"analytics_data_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.json",
                         mime="application/json",
@@ -863,24 +860,24 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                         summary = summarize_text(input_text)
                     predicted_emotions, probabilities = predict_emotions(input_text, threshold=threshold)
                 
-                st.subheader("📝 Customer Feedback Summary")
+                st.subheader("ðŸ“ Customer Feedback Summary")
                 st.info(summary)
                 
                 if predicted_emotions:
-                    st.subheader("🏢 Brand Sentiment Snapshot")
+                    st.subheader("ðŸ¢ Brand Sentiment Snapshot")
                     top_emotion = max(probabilities.items(), key=lambda x: x[1])
-                    emoji = EMOJI_MAP.get(top_emotion[0], "🎭")
+                    emoji = EMOJI_MAP.get(top_emotion[0], "ðŸŽ­")
                     
                     # Determine sentiment category
                     positive_emotions = ["joy", "love", "gratitude", "admiration", "excitement", "optimism", "pride", "relief"]
                     negative_emotions = ["anger", "sadness", "fear", "disappointment", "disgust", "annoyance", "disapproval", "embarrassment"]
                     
                     if top_emotion[0] in positive_emotions:
-                        sentiment_indicator = "🟢 Positive Sentiment"
+                        sentiment_indicator = "ðŸŸ¢ Positive Sentiment"
                     elif top_emotion[0] in negative_emotions:
-                        sentiment_indicator = "🔴 Negative Sentiment - Action Needed"
+                        sentiment_indicator = "ðŸ”´ Negative Sentiment - Action Needed"
                     else:
-                        sentiment_indicator = "🟡 Neutral/Mixed Sentiment"
+                        sentiment_indicator = "ðŸŸ¡ Neutral/Mixed Sentiment"
                     
                     col1, col2 = st.columns(2)
                     with col1:
@@ -896,6 +893,11 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                             delta=sentiment_indicator
                         )
 
-# Spacer and Footer
-spacer("lg")
-render_footer()
+# Footer
+st.markdown("---")
+st.markdown(
+    "<div style='text-align: center; color: #666;'>"
+    "Powered by BERT & Streamlit | Built with â¤ï¸"
+    "</div>",
+    unsafe_allow_html=True
+)
