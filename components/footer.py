@@ -40,48 +40,156 @@ def save_subscriber(email: str):
 
 
 def render_footer():
-    """Render the glassmorphic global footer"""
-    st.markdown("<hr/>", unsafe_allow_html=True)
+    """Render the glassmorphic global footer with improved design"""
     
-    st.markdown("""
-    <div class="glass-card" style="margin-top: 3rem; padding: 2rem;">
+    # Inject enhanced footer CSS
+    footer_css = """
+    <style>
+    /* Footer Container */
+    .footer-container {
+        width: 100%;
+        padding: 3rem 0 2rem 0;
+        margin-top: 4rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(8px);
+    }
+
+    .footer-content {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 2rem;
+        color: white;
+        padding: 0 1rem;
+    }
+
+    /* Left Column */
+    .footer-left h2 {
+        font-size: 1.6rem;
+        margin: 0;
+        font-weight: 700;
+        background: linear-gradient(135deg, #8A5CF6, #C06CFF);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .footer-left p {
+        margin-top: 0.5rem;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    .footer-left a {
+        color: #A78BFA;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+    .footer-left a:hover {
+        color: #C4B5FD;
+        text-decoration: underline;
+    }
+
+    /* Right Column */
+    .footer-right h3 {
+        margin: 0 0 0.7rem 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #FFFFFF;
+    }
+
+    .footer-links a {
+        display: block;
+        margin-bottom: 0.4rem;
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+        font-size: 0.95rem;
+        transition: color 0.2s ease;
+    }
+
+    .footer-links a:hover {
+        color: #C4B5FD;
+    }
+
+    /* Streamlit widgets styling in footer */
+    .footer-right .stTextInput > div > div > input {
+        background: rgba(255,255,255,0.06) !important;
+        border: 1px solid rgba(255,255,255,0.18) !important;
+        border-radius: 10px !important;
+        color: white !important;
+        padding: 0.7rem 1rem !important;
+        font-size: 0.95rem !important;
+    }
+
+    .footer-right .stTextInput > div > div > input::placeholder {
+        color: rgba(255,255,255,0.5) !important;
+    }
+
+    .footer-right .stTextInput > div > div > input:focus {
+        border-color: rgba(138, 92, 246, 0.5) !important;
+        box-shadow: 0 0 0 1px rgba(138, 92, 246, 0.3) !important;
+    }
+
+    .footer-right .stButton > button {
+        width: 100% !important;
+        padding: 0.75rem !important;
+        border-radius: 14px !important;
+        background: linear-gradient(135deg, #8A5CF6, #C06CFF) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 0 12px rgba(138,92,246,0.35) !important;
+        margin-top: 0.8rem !important;
+    }
+
+    .footer-right .stButton > button:hover {
+        transform: scale(1.02) !important;
+        box-shadow: 0 0 18px rgba(138,92,246,0.55) !important;
+    }
+    </style>
+    """
+    
+    st.markdown(footer_css, unsafe_allow_html=True)
+    
+    # Footer HTML structure
+    footer_html = """
+    <div class="footer-container">
+        <div class="footer-content">
+            
+            <!-- Left Column -->
+            <div class="footer-left">
+                <h2>EmoSense AI</h2>
+                <p>Emotion-aware insights for humans & brands.</p>
+                <p>Built with ❤️ by <a href="https://www.linkedin.com/in/amarnoor-kaur-455379249/" target="_blank">Amarnoor Kaur</a></p>
+            </div>
+
+            <!-- Right Column (Streamlit widgets will be injected here) -->
+            <div class="footer-right" id="footer-right-section">
+                <h3>Contact</h3>
+                <div class="footer-links">
+                    <a href="mailto:amar.noor.work@gmail.com">📧 Email</a>
+                    <a href="https://www.linkedin.com/in/amarnoor-kaur-455379249/" target="_blank">🔗 LinkedIn</a>
+                </div>
+            </div>
+
+        </div>
     </div>
-    """, unsafe_allow_html=True)
+    """
     
-    col1, col2 = st.columns([2, 1])
+    st.markdown(footer_html, unsafe_allow_html=True)
     
-    with col1:
-        st.markdown("""
-        <div style="margin-top: -3rem;">
-            <h3 style="color: #FFFFFF; margin-bottom: 0.5rem;">EmoSense AI</h3>
-            <p style="color: #A8A9B3; margin-bottom: 0.5rem;">
-                Emotion-aware insights for humans & brands.
-            </p>
-            <p style="color: #A8A9B3; font-size: 0.875rem;">
-                Built with ❤️ by <strong style="color: #8A5CF6;">Amarnoor Kaur</strong>
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+    # Create columns for the newsletter signup (this will appear in the right section)
+    col1, col2, col3 = st.columns([1, 1, 1])
     
-    with col2:
-        st.markdown("""
-        <div style="margin-top: -3rem;">
-            <p style="color: #FFFFFF; font-weight: 600; margin-bottom: 0.75rem;">Contact</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <p style="color: #A8A9B3; font-size: 0.875rem; margin-bottom: 0.5rem;">
-            📧 <a href="mailto:amar.noor.work@gmail.com" style="color: #8A5CF6; text-decoration: none;">Email</a>
-        </p>
-        <p style="color: #A8A9B3; font-size: 0.875rem; margin-bottom: 1rem;">
-            🔗 <a href="https://www.linkedin.com" style="color: #8A5CF6; text-decoration: none;">LinkedIn</a>
-        </p>
-        """, unsafe_allow_html=True)
-        
+    with col3:
         # Newsletter signup
         email = st.text_input(
-            "Get updates (newsletter):",
+            "Newsletter",
             key='footer_newsletter',
             placeholder="your@email.com",
             label_visibility="collapsed"
