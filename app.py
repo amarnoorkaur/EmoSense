@@ -7,6 +7,16 @@ import pandas as pd
 import io
 import matplotlib.pyplot as plt
 from collections import Counter
+import gc  # Garbage collection for memory management
+
+# Configure page first
+st.set_page_config(
+    page_title="EmoSense - Emotion Analysis", 
+    page_icon="🎭",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
 from utils.ai_summary import generate_ai_summary

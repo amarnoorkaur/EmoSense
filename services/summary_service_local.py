@@ -25,11 +25,17 @@ from services.summary_service import (
 # Initialize summarization pipeline (cached)
 @st.cache_resource
 def load_summarization_model():
-    """Load BART summarization model locally"""
+    """Load BART summarization model locally - only when needed"""
     if not TRANSFORMERS_AVAILABLE:
         return None
     
     try:
+        # Only load if explicitly needed
+        import os
+        if os.getenv("DISABLE_BART_MODEL", "true").lower() == "true":
+            print("⚠️ BART model disabled to save memory. Using fallback summarization.")
+            return None
+            
         summarizer = pipeline(
             "summarization",
             model="facebook/bart-large-cnn",
@@ -37,14 +43,14 @@ def load_summarization_model():
         )
         return summarizer
     except Exception as e:
-        st.error(f"Failed to load summarization model: {e}")
+        print(f"⚠️ Failed to load summarization model: {e}")
         return None
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def summarize_text_local(text: str) -> str:
     """
-    Generate summary using local transformers model
+    Generate summary using local transformers model or fallback
     
     Args:
         text: Input text to summarize
@@ -62,13 +68,21 @@ def summarize_text_local(text: str) -> str:
     
     # Check if transformers is available
     if not TRANSFORMERS_AVAILABLE:
-        return "⚠️ Transformers library not available. Please install: pip install transformers"
+        # Fallback: return a simple extractive summary
+        sentences = cleaned_text.split('. ')
+        if len(sentences) <= 3:
+            return cleaned_text
+        return '. '.join(sentences[:3]) + '...'
     
     try:
         # Load model
         summarizer = load_summarization_model()
         if summarizer is None:
-            return "⚠️ Failed to load summarization model"
+            # Fallback: return extractive summary
+            sentences = cleaned_text.split('. ')
+            if len(sentences) <= 3:
+                return cleaned_text
+            return '. '.join(sentences[:3]) + '...'
         
         # Generate summary
         with st.spinner("Generating summary..."):

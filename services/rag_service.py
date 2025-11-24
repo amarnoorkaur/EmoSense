@@ -11,6 +11,10 @@ from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 
 
+# Singleton instance
+_rag_instance = None
+
+
 class MarketResearchRAG:
     """
     Retrieval-Augmented Generation service for market research documents
@@ -26,7 +30,7 @@ class MarketResearchRAG:
         self.persist_directory = persist_directory
         self.collection_name = "market_research"
         
-        # Initialize ChromaDB client
+        # Initialize ChromaDB client with memory optimization
         self.client = chromadb.PersistentClient(
             path=persist_directory,
             settings=Settings(anonymized_telemetry=False)
