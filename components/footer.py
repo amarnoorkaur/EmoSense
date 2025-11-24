@@ -1,6 +1,6 @@
 """
-Global Footer Component for EmoSense AI
-Includes contact info, links, and newsletter signup
+Global Footer Component - EmoSense AI
+Glassmorphic design with newsletter signup
 """
 import streamlit as st
 import json
@@ -10,30 +10,26 @@ from datetime import datetime
 # Path to store newsletter subscribers
 SUBSCRIBERS_FILE = "data/newsletter_subscribers.json"
 
+
 def save_subscriber(email: str):
     """Save newsletter subscriber email"""
     try:
-        # Create data directory if it doesn't exist
         os.makedirs("data", exist_ok=True)
         
-        # Load existing subscribers
         if os.path.exists(SUBSCRIBERS_FILE):
             with open(SUBSCRIBERS_FILE, 'r') as f:
                 subscribers = json.load(f)
         else:
             subscribers = []
         
-        # Check if email already exists
         if email in [sub.get('email') for sub in subscribers]:
             return False
         
-        # Add new subscriber
         subscribers.append({
             "email": email,
             "subscribed_at": datetime.now().isoformat()
         })
         
-        # Save back to file
         with open(SUBSCRIBERS_FILE, 'w') as f:
             json.dump(subscribers, f, indent=2)
         
@@ -44,46 +40,58 @@ def save_subscriber(email: str):
 
 
 def render_footer():
-    """Render the redesigned global footer component"""
+    """Render the glassmorphic global footer"""
+    st.markdown("<hr/>", unsafe_allow_html=True)
     
-    # Divider
-    st.markdown("---", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="glass-card" style="margin-top: 3rem; padding: 2rem;">
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Footer layout
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.markdown("**EmoSense AI** · Emotion-aware insights for humans & brands.")
-        st.markdown("Built with ❤️ by **Amarnoor Kaur**.")
+        st.markdown("""
+        <div style="margin-top: -3rem;">
+            <h3 style="color: #FFFFFF; margin-bottom: 0.5rem;">EmoSense AI</h3>
+            <p style="color: #A8A9B3; margin-bottom: 0.5rem;">
+                Emotion-aware insights for humans & brands.
+            </p>
+            <p style="color: #A8A9B3; font-size: 0.875rem;">
+                Built with ❤️ by <strong style="color: #8A5CF6;">Amarnoor Kaur</strong>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        st.markdown("**Contact**")
-        st.markdown("[Email](mailto:amar.noor.work@gmail.com)")
-        # Placeholder link for LinkedIn
-        st.markdown("[LinkedIn](https://www.linkedin.com)")
+        st.markdown("""
+        <div style="margin-top: -3rem;">
+            <p style="color: #FFFFFF; font-weight: 600; margin-bottom: 0.75rem;">Contact</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <p style="color: #A8A9B3; font-size: 0.875rem; margin-bottom: 0.5rem;">
+            📧 <a href="mailto:amar.noor.work@gmail.com" style="color: #8A5CF6; text-decoration: none;">Email</a>
+        </p>
+        <p style="color: #A8A9B3; font-size: 0.875rem; margin-bottom: 1rem;">
+            🔗 <a href="https://www.linkedin.com" style="color: #8A5CF6; text-decoration: none;">LinkedIn</a>
+        </p>
+        """, unsafe_allow_html=True)
         
         # Newsletter signup
         email = st.text_input(
-            "Get updates (newsletter):", 
-            key='footer_newsletter', 
-            label_visibility="collapsed", 
-            placeholder="Enter your email"
+            "Get updates (newsletter):",
+            key='footer_newsletter',
+            placeholder="your@email.com",
+            label_visibility="collapsed"
         )
-        if st.button("Notify me", key='footer_notify'):
-            # Acknowledge subscription
+        
+        if st.button("✨ Notify Me", key='footer_notify', use_container_width=True):
             if email and "@" in email and "." in email:
                 if save_subscriber(email):
-                    st.success("Thanks! We'll keep you posted.")
+                    st.success("Thanks! We'll keep you posted. 🎉")
                 else:
-                    st.info("You're already subscribed!")
+                    st.info("You're already subscribed! ✅")
             else:
-                st.warning("Please enter an email address.")
-
-
-# Test footer when run directly
-if __name__ == "__main__":
-    st.set_page_config(page_title="Footer Test", layout="wide")
-    st.title("Footer Component Test")
-    st.write("This is some page content...")
-    st.write("Scroll down to see the footer")
-    render_footer()
+                st.warning("Please enter a valid email address.")

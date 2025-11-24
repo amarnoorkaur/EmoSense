@@ -1,158 +1,307 @@
 """
 Terms & Conditions - EmoSense AI
-Clean, organized with expanders for better readability
+Glassmorphic design with organized expanders
 """
 import streamlit as st
-from components.layout import set_page_config, page_container, hero_section, spacer
+from components.layout import set_page_config, inject_global_styles, page_container, gradient_hero, spacer
 from components.footer import render_footer
 
 # Configure page
 set_page_config()
+inject_global_styles()
 
 # Main container
 with page_container():
-    # Hero Section
-    hero_section(
-        title="📜 Terms & Conditions",
-        subtitle="Please read this carefully before using EmoSense AI.",
-        detail="Last Updated: January 2025"
+    st.markdown('<div class="main-container">', unsafe_allow_html=True)
+    
+    # Hero
+    gradient_hero(
+        "📜 Terms & Conditions",
+        "Please read these terms carefully before using EmoSense AI."
     )
     
     spacer("md")
     
-    # Section 1: Use of the Platform
-    with st.expander("**1. Use of the Platform**", expanded=False):
-        st.markdown("""
-        By accessing and using EmoSense AI, you agree to comply with these Terms and Conditions. 
-        EmoSense AI is an emotion analytics platform designed for personal and business use.
-        
-        **You may use this platform to:**
-        - Analyze emotional content from text inputs
-        - Generate AI-powered summaries and insights
-        - Access personal emotion companion features
-        - Upload and analyze bulk customer feedback (Business tier)
-        
-        **You must not** use this platform for any illegal, harmful, or malicious purposes.
-        """)
+    st.markdown("""
+    <div class="glass-card">
+        <p style="color: #A8A9B3; line-height: 1.8;">
+            <strong style="color: #FFFFFF;">Last Updated:</strong> December 2024<br/>
+            By accessing or using EmoSense AI, you agree to be bound by these Terms and Conditions. 
+            If you do not agree with any part of these terms, please do not use our service.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Section 2: User Content
-    with st.expander("**2. User Content**", expanded=False):
-        st.markdown("""
-        All text, comments, and data you upload to EmoSense AI remain your property. 
-        However, by using the platform, you grant us a limited license to process, analyze, 
-        and store your content for the purpose of providing our services.
-        
-        - We do not sell or share your data with third parties
-        - Your content is processed using AI models (BERT, BART, GPT-4o-mini)
-        - You are responsible for ensuring you have rights to upload any content
-        - We reserve the right to remove content that violates our policies
-        """)
+    spacer("md")
     
-    # Section 3: Data & Privacy
-    with st.expander("**3. Data & Privacy**", expanded=False):
+    # Expander 1: Use of Platform
+    with st.expander("⚖️ Use of Platform", expanded=False):
         st.markdown("""
-        Your privacy is important to us. We collect and process data in accordance with 
-        applicable privacy laws.
+        ### Permitted Use
         
-        **Data Collection:**  
-        We collect text inputs, emotion analysis results, and usage analytics.
+        EmoSense AI is provided for personal, educational, and commercial emotion analysis purposes. You may:
         
-        **Data Storage:**  
-        Data is stored securely using industry-standard encryption.
+        - Analyze text for emotion detection and sentiment insights
+        - Use bulk analysis features for business intelligence
+        - Download reports and analytics for internal use
+        - Integrate insights into your decision-making processes
         
-        **Data Retention:**  
-        We retain data only as long as necessary to provide services.
+        ### Prohibited Activities
         
-        **Third-Party Services:**  
-        We use OpenAI API (GPT-4o-mini) for AI recommendations — their privacy policy applies.
+        You must NOT:
         
-        **Your Rights:**  
-        You may request data deletion at any time by contacting us at amar.noor.work@gmail.com.
-        """)
+        - Use the platform to analyze private communications without consent
+        - Attempt to reverse-engineer or copy our AI models
+        - Overload the system with automated requests (rate limiting applies)
+        - Use outputs to harm, discriminate, or manipulate individuals
+        - Violate any applicable laws or regulations
+        
+        ### Account Responsibility
+        
+        If you create an account:
+        - You are responsible for maintaining the confidentiality of your credentials
+        - You agree to notify us immediately of any unauthorized access
+        - You are liable for all activities under your account
+        """, unsafe_allow_html=True)
     
-    # Section 4: AI-Generated Output
-    with st.expander("**4. AI-Generated Output**", expanded=False):
+    # Expander 2: Privacy & Data Handling
+    with st.expander("🛡️ Privacy & Data Handling", expanded=False):
         st.markdown("""
-        EmoSense AI uses artificial intelligence models to generate insights, summaries, 
-        and recommendations. Please note:
+        ### Data Processing
         
-        - AI outputs are generated automatically and may contain errors or inaccuracies
-        - Outputs should be used as guidance, not absolute truth
-        - We do not guarantee the accuracy, completeness, or reliability of AI outputs
-        - Users are responsible for verifying critical information before making decisions
-        - AI models may reflect biases present in training data
+        **What We Process:**
+        - Text input you provide for emotion analysis
+        - Uploaded CSV files for bulk analysis
+        - API usage statistics (anonymous)
         
-        **Important:** EmoSense is NOT a replacement for professional medical, psychological, 
-        or legal advice.
-        """)
+        **What We DON'T Store:**
+        - Your actual text input (processed in real-time only)
+        - Personal identifiable information unless explicitly provided (e.g., newsletter signup)
+        - Emotion analysis results after session ends
+        
+        ### Third-Party Services
+        
+        EmoSense uses the following third-party services:
+        
+        - **Hugging Face API** - For BERT emotion detection and BART summarization
+        - **OpenAI API** - For GPT-4 recommendations (optional, opt-in only)
+        - **ChromaDB** - For RAG knowledge retrieval (on our secure servers)
+        
+        Your data is transmitted securely via HTTPS. Third-party APIs have their own privacy policies, 
+        which we encourage you to review.
+        
+        ### Cookies & Analytics
+        
+        We may use cookies to:
+        - Remember your preferences (e.g., threshold settings)
+        - Improve user experience
+        - Gather anonymous usage statistics
+        
+        You can disable cookies in your browser settings, though some features may not function properly.
+        
+        ### GDPR & CCPA Compliance
+        
+        If you are located in the EU or California:
+        - You have the right to access, delete, or export your data
+        - You can opt-out of newsletter communications at any time
+        - Contact us at privacy@emosense.ai for data requests
+        """, unsafe_allow_html=True)
     
-    # Section 5: Limitation of Liability
-    with st.expander("**5. Limitation of Liability**", expanded=False):
+    # Expander 3: AI Output Limitations
+    with st.expander("🤖 AI Output Limitations", expanded=False):
         st.markdown("""
-        EmoSense AI is provided "as is" without warranties of any kind. To the fullest extent 
-        permitted by law:
+        ### Nature of AI Predictions
         
-        - We are not liable for any direct, indirect, or consequential damages arising from your use
-        - We do not guarantee uninterrupted or error-free service
-        - We are not responsible for decisions made based on AI-generated insights
-        - Maximum liability is limited to the amount paid for services (if applicable)
+        EmoSense AI uses machine learning models that provide **probabilistic predictions**, not absolute truths. 
         
-        **This platform is not a substitute for professional mental health support, medical advice, 
-        or therapy.** If you're experiencing a crisis, please contact a mental health professional 
-        or crisis hotline immediately.
-        """)
+        **Important Disclaimers:**
+        
+        - **Not Medical Advice**: EmoSense is NOT a mental health diagnostic tool. It does not replace 
+          professional psychological evaluation or therapy.
+        - **Accuracy Limitations**: While our models are state-of-the-art, they may misinterpret sarcasm, 
+          cultural nuances, or context-specific language.
+        - **Bias Awareness**: AI models can reflect biases present in training data. We strive for fairness 
+          but cannot guarantee perfect neutrality.
+        - **No Guarantees**: We do not guarantee specific accuracy rates or outcomes from using our platform.
+        
+        ### Responsible Use
+        
+        - Use EmoSense as ONE input among many in decision-making
+        - Do not make critical decisions (hiring, medical, legal) based solely on emotion analysis
+        - Verify AI suggestions with human judgment and domain expertise
+        - For mental health concerns, consult licensed professionals
+        
+        ### Model Updates
+        
+        We may update our AI models to improve performance. This may result in:
+        - Different emotion labels or probabilities for the same text
+        - Changes in summarization or recommendation outputs
+        - New features or categories
+        
+        We will notify users of major model changes via the platform.
+        """, unsafe_allow_html=True)
     
-    # Section 6: Prohibited Activities
-    with st.expander("**6. Prohibited Activities**", expanded=False):
+    # Expander 4: Prohibited Activities
+    with st.expander("⛔ Prohibited Activities", expanded=False):
         st.markdown("""
-        You agree not to:
+        ### Strictly Forbidden
         
-        - Use the platform for illegal or harmful purposes
-        - Upload hateful, violent, or discriminatory content
-        - Attempt to reverse-engineer, hack, or exploit the platform
-        - Scrape or automate data collection without permission
-        - Impersonate others or provide false information
-        - Violate intellectual property rights
-        - Overload our systems with excessive requests
-        - Use the platform to harm, harass, or threaten others
+        You may NOT use EmoSense AI to:
         
-        **Violation may result in account suspension or legal action.**
-        """)
+        1. **Harm or Manipulate**
+           - Psychologically manipulate individuals based on detected emotions
+           - Target vulnerable populations with predatory content
+           - Use emotion data for discriminatory purposes
+        
+        2. **Violate Privacy**
+           - Analyze private messages without explicit consent
+           - Scrape or harvest user data from platforms without authorization
+           - Share emotion analysis results that violate privacy laws
+        
+        3. **Abuse the System**
+           - Launch denial-of-service attacks or excessive automated requests
+           - Attempt to extract, copy, or replicate our AI models
+           - Circumvent rate limits or security measures
+        
+        4. **Illegal Activities**
+           - Use the platform for fraud, harassment, or illegal surveillance
+           - Violate intellectual property rights
+           - Engage in any activity prohibited by local, state, or federal law
+        
+        ### Consequences
+        
+        Violation of these terms may result in:
+        - Immediate suspension or termination of your account
+        - Legal action if applicable
+        - Reporting to relevant authorities for criminal activities
+        """, unsafe_allow_html=True)
     
-    # Section 7: Modifications
-    with st.expander("**7. Modifications to Terms**", expanded=False):
+    # Expander 5: Liability
+    with st.expander("📉 Limitation of Liability", expanded=False):
         st.markdown("""
-        We reserve the right to update or modify these Terms & Conditions at any time. 
-        Changes will be effective immediately upon posting.
+        ### Service Provided "As Is"
         
-        Your continued use of the platform after changes constitutes acceptance of the updated terms.
+        EmoSense AI is provided on an **"AS IS" and "AS AVAILABLE"** basis, without warranties of any kind, 
+        either express or implied.
         
-        We recommend reviewing this page periodically to stay informed about any updates.
-        """)
+        ### No Warranty
+        
+        We do not warrant that:
+        - The service will be uninterrupted, secure, or error-free
+        - Results will be accurate, reliable, or complete
+        - Defects will be corrected promptly
+        - The platform is free from viruses or harmful components
+        
+        ### Limitation of Damages
+        
+        To the maximum extent permitted by law:
+        
+        - We are NOT liable for any indirect, incidental, or consequential damages arising from your use 
+          of EmoSense AI
+        - We are NOT liable for loss of data, revenue, profits, or business opportunities
+        - Our total liability shall not exceed the amount you paid for the service (if any) in the 
+          past 12 months
+        
+        ### Indemnification
+        
+        You agree to indemnify and hold harmless EmoSense AI, its creators, and affiliates from any claims, 
+        damages, or expenses arising from:
+        - Your violation of these Terms
+        - Your misuse of the platform
+        - Your violation of any third-party rights
+        
+        ### Force Majeure
+        
+        We are not liable for delays or failures caused by circumstances beyond our control, including:
+        - Natural disasters, pandemics, or acts of God
+        - Government actions or regulations
+        - Third-party service outages (Hugging Face, OpenAI, etc.)
+        - Internet infrastructure failures
+        """, unsafe_allow_html=True)
     
-    # Section 8: Contact
-    with st.expander("**8. Contact Information**", expanded=False):
+    # Expander 6: Modifications
+    with st.expander("📝 Modifications to Terms", expanded=False):
         st.markdown("""
-        If you have any questions, concerns, or requests regarding these Terms & Conditions, 
-        please contact us:
+        ### Right to Modify
         
-        **Email:** amar.noor.work@gmail.com  
-        **Creator:** Amarnoor Kaur  
-        **Location:** Canada
+        We reserve the right to modify these Terms and Conditions at any time. Changes may include:
+        - Updates to reflect new features or services
+        - Clarifications based on user feedback
+        - Legal or regulatory compliance updates
         
-        We aim to respond to all inquiries within 48 hours.
-        """)
+        ### Notification
+        
+        When we make material changes:
+        - We will update the "Last Updated" date at the top of this page
+        - We may notify you via email (if subscribed to our newsletter)
+        - We may display a prominent notice on the platform
+        
+        ### Acceptance of Changes
+        
+        By continuing to use EmoSense AI after changes are posted, you agree to the updated Terms. 
+        If you do not agree with the changes, you must stop using the platform.
+        
+        ### Version History
+        
+        Previous versions of Terms and Conditions are available upon request at legal@emosense.ai.
+        """, unsafe_allow_html=True)
+    
+    # Expander 7: Contact
+    with st.expander("✉️ Contact & Dispute Resolution", expanded=False):
+        st.markdown("""
+        ### Contact Information
+        
+        For questions, concerns, or requests regarding these Terms:
+        
+        - **Email:** legal@emosense.ai
+        - **Support:** support@emosense.ai
+        - **Data Requests:** privacy@emosense.ai
+        
+        We aim to respond to all inquiries within 5 business days.
+        
+        ### Dispute Resolution
+        
+        If you have a dispute with EmoSense AI:
+        
+        1. **Informal Resolution**: Contact us first to resolve the issue amicably
+        2. **Mediation**: If informal resolution fails, we encourage mediation through a mutually 
+           agreed-upon neutral third party
+        3. **Arbitration**: Any unresolved disputes will be settled through binding arbitration in 
+           accordance with the rules of the American Arbitration Association
+        
+        ### Governing Law
+        
+        These Terms are governed by the laws of [Your Jurisdiction], without regard to conflict of law principles.
+        
+        ### Severability
+        
+        If any provision of these Terms is found to be invalid or unenforceable, the remaining provisions 
+        will continue in full force and effect.
+        
+        ### Entire Agreement
+        
+        These Terms constitute the entire agreement between you and EmoSense AI regarding the use of our 
+        platform, superseding any prior agreements or communications.
+        """, unsafe_allow_html=True)
     
     spacer("lg")
     
-    # Additional note
-    st.info("""
-    💡 **Note:** These terms are designed to protect both users and the platform. 
-    By using EmoSense AI, you acknowledge that you have read, understood, and agree 
-    to be bound by these Terms & Conditions.
-    """)
+    # Acknowledgment
+    st.markdown("""
+    <div class="glass-card" style="text-align: center; padding: 2rem;">
+        <h3 style="color: #FFFFFF; margin-bottom: 1rem;">Thank You for Using EmoSense AI</h3>
+        <p style="color: #A8A9B3; line-height: 1.8;">
+            We are committed to providing a safe, ethical, and valuable emotion analysis platform. 
+            Your trust and responsible use are essential to our mission.
+        </p>
+        <p style="color: #8A5CF6; margin-top: 1rem;">
+            💜 If you have feedback or questions, we'd love to hear from you!
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    spacer("md")
+    spacer("lg")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Footer
 render_footer()
