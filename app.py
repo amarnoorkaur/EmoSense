@@ -33,7 +33,7 @@ with page_container():
                 st.switch_page("pages/personal_chatbot.py")
         
         with btn_col2:
-            if st.button("📊 Business Emotion Intelligence", use_container_width=True, type="primary"):
+            if st.button("🤝 Business Buddy", use_container_width=True, type="primary"):
                 st.switch_page("pages/business_chatbot.py")
     
     spacer("lg")
@@ -62,13 +62,13 @@ with page_container():
         st.markdown("""
         <div class="glass-card">
             <h3 style="color: #FFFFFF; margin-bottom: 1rem; font-size: 1.5rem;">
-                📊 For Businesses
+                🤝 Business Buddy
             </h3>
             <ul class="feature-list">
-                <li>Upload comments or reviews in bulk</li>
-                <li>See sentiment & emotion breakdowns instantly</li>
-                <li>Get AI-powered recommendations using real market research</li>
-                <li>Turn emotional data into actionable insights</li>
+                <li>Analyze customer comments and social media feedback</li>
+                <li>Get sentiment & emotion insights with AI-powered summaries</li>
+                <li>Chat with Business Buddy for deeper understanding</li>
+                <li>Turn emotional data into actionable business strategies</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)

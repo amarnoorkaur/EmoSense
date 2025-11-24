@@ -1,7 +1,7 @@
 """
-Business Emotion Intelligence - EmoSense AI
-Complete analytics dashboard with glassmorphic design
-Includes: Chat Mode, Smart Summary, Category Detection, AI Insights
+Business Buddy - EmoSense AI
+Your intelligent business analytics companion with glassmorphic design
+Includes: Chat Mode, Smart Summary, Category Detection, AI Insights, Interactive Chat
 """
 import streamlit as st
 import pandas as pd
@@ -30,6 +30,10 @@ inject_global_styles()
 # Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "buddy_chat" not in st.session_state:
+    st.session_state.buddy_chat = []
+if "analysis_context" not in st.session_state:
+    st.session_state.analysis_context = None
 
 # Main container
 with page_container():
@@ -37,8 +41,8 @@ with page_container():
     
     # Hero
     gradient_hero(
-        "📊 Business Emotion Intelligence",
-        "Analyze customer emotions at scale. Understand sentiment, detect patterns, and get AI-powered insights."
+        "🤝 Business Buddy",
+        "Your AI companion for customer emotion analysis. Understand sentiment, detect patterns, and get actionable insights."
     )
     
     spacer("md")
@@ -373,6 +377,192 @@ with page_container():
                         mime="application/json",
                         use_container_width=True
                     )
+                
+                # Store analysis context for chat
+                st.session_state.analysis_context = {
+                    "input_text": input_text,
+                    "summary": combined_result['summary'],
+                    "dominant_emotion": combined_result['dominant_emotion'],
+                    "all_emotions": combined_result['all_emotions'],
+                    "reasoning": combined_result['reasoning'],
+                    "suggested_action": combined_result['suggested_action'],
+                    "category": category,
+                    "sentiment_status": sentiment_status,
+                    "brand_health": brand_health
+                }
+                
+                # Business Buddy Chat Feature
+                spacer("lg")
+                st.markdown("""
+                <div class="glass-card">
+                    <h3 style="color: #FFFFFF; margin-bottom: 0.5rem;">💬 Chat with Business Buddy</h3>
+                    <p style="color: #A8A9B3;">Have questions about your analysis? Chat with Business Buddy for deeper insights!</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                spacer("sm")
+                
+                # Display chat history
+                if st.session_state.buddy_chat:
+                    for chat_msg in st.session_state.buddy_chat:
+                        if chat_msg["role"] == "user":
+                            st.markdown(f"""
+                            <div class="message-user fade-in">
+                                {chat_msg['content']}
+                            </div>
+                            <div style="clear: both;"></div>
+                            """, unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"""
+                            <div class="message-ai fade-in">
+                                {chat_msg['content']}
+                            </div>
+                            <div style="clear: both;"></div>
+                            """, unsafe_allow_html=True)
+                    spacer("sm")
+                
+                # Chat input
+                user_question = st.text_input(
+                    "Ask Business Buddy:",
+                    placeholder="e.g., What should I focus on first? How can I improve negative sentiment?",
+                    key="buddy_question"
+                )
+                
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    if st.button("💬 Ask Buddy", type="primary", use_container_width=True):
+                        if user_question.strip():
+                            # Add user question to chat
+                            st.session_state.buddy_chat.append({
+                                "role": "user",
+                                "content": user_question
+                            })
+                            
+                            # Generate contextual response
+                            context = st.session_state.analysis_context
+                            
+                            # Smart contextual responses
+                            question_lower = user_question.lower()
+                            
+                            if "focus" in question_lower or "priority" in question_lower or "first" in question_lower:
+                                if context['sentiment_status'] == "Negative":
+                                    response = f"""Based on your analysis showing **{context['dominant_emotion']}** as the dominant emotion, I recommend:
+
+1. **Address negative sentiment immediately** - Your brand health status is "{context['brand_health']}"
+2. **Review the specific comments** causing {context['dominant_emotion']} - understand the root cause
+3. **Implement the suggested actions**: {context['suggested_action'][:200]}...
+4. **Monitor response** after making changes
+
+The priority is damage control and rebuilding trust."""
+                                else:
+                                    response = f"""Great news! Your sentiment is **{context['sentiment_status']}** with **{context['dominant_emotion']}** as the dominant emotion.
+
+Focus areas:
+1. **Amplify what's working** - your customers are responding positively!
+2. **Engage with positive commenters** to build loyalty
+3. **Apply these insights**: {context['suggested_action'][:200]}...
+4. **Scale successful strategies** across other channels"""
+                            
+                            elif "improve" in question_lower or "fix" in question_lower or "negative" in question_lower:
+                                response = f"""To improve negative sentiment and address **{context['dominant_emotion']}** emotions:
+
+**Immediate Actions:**
+- Acknowledge customer concerns publicly
+- Show empathy and understanding
+- Provide clear solutions or timelines
+
+**Strategic Improvements:**
+{context['suggested_action']}
+
+**Category-specific tip for {context['category']}:**
+- If this is a recurring theme, consider a proactive communication strategy
+- Set up monitoring alerts for similar sentiment spikes"""
+                            
+                            elif "emotion" in question_lower or "feel" in question_lower:
+                                top_emotions = sorted(context['all_emotions'].items(), key=lambda x: x[1], reverse=True)[:3]
+                                emotion_text = ", ".join([f"**{e[0].capitalize()}** ({e[1]:.1%})" for e in top_emotions])
+                                response = f"""Your customers are primarily feeling: {emotion_text}
+
+**Emotional Breakdown:**
+{context['reasoning']}
+
+**What this means:**
+The emotional tone is **{context['sentiment_status']}** overall. These emotions indicate {context['brand_health'].lower()}.
+
+Understanding these emotions helps you craft responses that resonate emotionally with your audience."""
+                            
+                            elif "category" in question_lower or "type" in question_lower:
+                                response = f"""This feedback falls under **{context['category']}** category.
+
+**Why this matters:**
+- Different categories require different response strategies
+- {context['category']} typically involves {context['reasoning'][:150]}...
+
+**Best practices for {context['category']}:**
+- Respond promptly (within 24 hours for negative feedback)
+- Use category-specific language and tone
+- Track patterns over time in this category"""
+                            
+                            elif "action" in question_lower or "do" in question_lower or "next" in question_lower:
+                                response = f"""Here's your action plan:
+
+**Suggested Actions:**
+{context['suggested_action']}
+
+**Next Steps:**
+1. Download the full report (MD or JSON format above)
+2. Share insights with your team
+3. Implement top 2-3 recommendations this week
+4. Monitor sentiment changes after implementation
+5. Return to Business Buddy for follow-up analysis
+
+Would you like me to elaborate on any specific action?"""
+                            
+                            elif "summary" in question_lower or "overview" in question_lower:
+                                response = f"""**Quick Summary:**
+
+{context['summary']}
+
+**Key Metrics:**
+- Dominant Emotion: {context['dominant_emotion'].capitalize()}
+- Sentiment: {context['sentiment_status']}
+- Brand Health: {context['brand_health']}
+- Category: {context['category']}
+
+This gives you a high-level view of customer sentiment. Need specifics on any area?"""
+                            
+                            else:
+                                # Generic helpful response
+                                response = f"""I'm here to help you understand your analysis! 
+
+**Your Analysis Summary:**
+- Dominant emotion: **{context['dominant_emotion'].capitalize()}**
+- Sentiment: **{context['sentiment_status']}**
+- Brand health: {context['brand_health']}
+
+**I can help you with:**
+- Understanding specific emotions in detail
+- Prioritizing actions and next steps
+- Strategies to improve sentiment
+- Interpreting the category classification
+- Creating an action plan
+
+What would you like to know more about?"""
+                            
+                            # Add buddy response to chat
+                            st.session_state.buddy_chat.append({
+                                "role": "assistant",
+                                "content": response
+                            })
+                            
+                            st.rerun()
+                        else:
+                            st.warning("⚠️ Please enter a question.")
+                
+                with col2:
+                    if st.button("🗑️ Clear Chat", use_container_width=True):
+                        st.session_state.buddy_chat = []
+                        st.rerun()
     
     spacer("lg")
     st.markdown('</div>', unsafe_allow_html=True)
