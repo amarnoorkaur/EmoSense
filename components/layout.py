@@ -351,6 +351,7 @@ def inject_global_styles():
     .spacer-sm { height: 1rem; }
     .spacer-md { height: 2rem; }
     .spacer-lg { height: 3rem; }
+    .spacer-xl { height: 4rem; }
     
     /* === SIDEBAR === */
     [data-testid="stSidebar"] {

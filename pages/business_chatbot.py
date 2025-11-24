@@ -741,44 +741,37 @@ with page_container():
         with col2:
             sentiments = st.session_state.analysis_sentiments
             
-            st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.05); padding: 24px; border-radius: 12px;">
-                <h4 style="color: #FFFFFF; margin-bottom: 1rem;">Overall Status: {sentiments['status']}</h4>
-                
-                <div style="margin: 1rem 0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #10B981;">✅ Positive</span>
-                        <span style="color: #FFFFFF; font-weight: bold;">{sentiments['positive']:.1%}</span>
-                    </div>
-                    <div style="background: rgba(16, 185, 129, 0.2); height: 24px; border-radius: 12px; overflow: hidden;">
-                        <div style="background: linear-gradient(90deg, #10B981, #34D399); 
-                                    width: {sentiments['positive']*100}%; height: 100%;"></div>
-                    </div>
-                </div>
-                
-                <div style="margin: 1rem 0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #EF4444;">❌ Negative</span>
-                        <span style="color: #FFFFFF; font-weight: bold;">{sentiments['negative']:.1%}</span>
-                    </div>
-                    <div style="background: rgba(239, 68, 68, 0.2); height: 24px; border-radius: 12px; overflow: hidden;">
-                        <div style="background: linear-gradient(90deg, #EF4444, #F87171); 
-                                    width: {sentiments['negative']*100}%; height: 100%;"></div>
-                    </div>
-                </div>
-                
-                <div style="margin: 1rem 0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #6B7280;">⚪ Neutral</span>
-                        <span style="color: #FFFFFF; font-weight: bold;">{sentiments['neutral']:.1%}</span>
-                    </div>
-                    <div style="background: rgba(107, 114, 128, 0.2); height: 24px; border-radius: 12px; overflow: hidden;">
-                        <div style="background: linear-gradient(90deg, #6B7280, #9CA3AF); 
-                                    width: {sentiments['neutral']*100}%; height: 100%;"></div>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"#### Overall Status: **{sentiments['status']}**")
+            
+            spacer("sm")
+            
+            # Positive
+            col_a, col_b = st.columns([3, 1])
+            with col_a:
+                st.markdown("✅ **Positive**")
+            with col_b:
+                st.markdown(f"**{sentiments['positive']:.1%}**")
+            st.progress(sentiments['positive'])
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Negative
+            col_a, col_b = st.columns([3, 1])
+            with col_a:
+                st.markdown("❌ **Negative**")
+            with col_b:
+                st.markdown(f"**{sentiments['negative']:.1%}**")
+            st.progress(sentiments['negative'])
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Neutral
+            col_a, col_b = st.columns([3, 1])
+            with col_a:
+                st.markdown("⚪ **Neutral**")
+            with col_b:
+                st.markdown(f"**{sentiments['neutral']:.1%}**")
+            st.progress(sentiments['neutral'])
         
         spacer("lg")
         
