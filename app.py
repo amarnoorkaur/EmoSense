@@ -653,6 +653,34 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                 
                 st.success("✅ Emotion analysis complete!")
                 
+                # Step 1.5: Detect Post Category
+                with st.spinner("🧩 Detecting content category..."):
+                    from services.post_category_classifier import (
+                        detect_post_category, 
+                        get_category_emoji,
+                        get_category_color
+                    )
+                    category_result = detect_post_category(input_text)
+                
+                # Display category badge
+                category = category_result.get("category", "General Feedback")
+                category_confidence = category_result.get("confidence", 0.0)
+                category_emoji = get_category_emoji(category)
+                category_color = get_category_color(category)
+                
+                st.markdown(f"""
+                <div style='background: linear-gradient(135deg, {category_color}33, {category_color}11); 
+                            border-left: 4px solid {category_color}; 
+                            padding: 12px 20px; 
+                            border-radius: 8px; 
+                            margin: 10px 0;'>
+                    <p style='margin: 0; font-size: 14px; font-weight: 600;'>
+                        {category_emoji} <span style='color: {category_color};'>Detected Category:</span> 
+                        <strong>{category}</strong> ({category_confidence:.0%} confidence)
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
                 # Step 2: Generate Summary
                 with st.spinner("📝 Generating AI summary (this may take 20-30 seconds on first run)..."):
                     if USE_LOCAL_MODEL:
@@ -667,12 +695,13 @@ elif analysis_mode == "🧠 Smart Emotional Summary":
                     "probabilities": probabilities
                 }
                 
-                # Pass enhanced AI flag to combine function
+                # Pass enhanced AI flag and category context to combine function
                 combined_result = combine_emotion_and_summary(
                     emotion_output,
                     summary,
                     input_text,
-                    use_enhanced_ai=use_enhanced_ai
+                    use_enhanced_ai=use_enhanced_ai,
+                    category_context=category_result
                 )
                 
                 # Step 4: Render Beautiful Output

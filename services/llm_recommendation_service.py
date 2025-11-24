@@ -33,7 +33,8 @@ class LLMRecommendationService:
                                dominant_emotion: str,
                                all_emotions: Dict[str, float],
                                confidence: float,
-                               research_context: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+                               research_context: List[Dict[str, Any]] = None,
+                               category_context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Generate dynamic business recommendation using LLM
         
@@ -43,17 +44,19 @@ class LLMRecommendationService:
             all_emotions: All emotion probabilities
             confidence: Confidence level (0-1)
             research_context: Retrieved market research documents
+            category_context: Optional post category detection results
             
         Returns:
             Dictionary with recommendation, reasoning, and sources
         """
-        # Build prompt
+        # Build prompt with category context
         prompt = self._build_prompt(
             summary=summary,
             dominant_emotion=dominant_emotion,
             all_emotions=all_emotions,
             confidence=confidence,
-            research_context=research_context
+            research_context=research_context,
+            category_context=category_context
         )
         
         try:
@@ -112,9 +115,10 @@ class LLMRecommendationService:
                      dominant_emotion: str,
                      all_emotions: Dict[str, float],
                      confidence: float,
-                     research_context: List[Dict[str, Any]]) -> str:
+                     research_context: List[Dict[str, Any]],
+                     category_context: Dict[str, Any] = None) -> str:
         """
-        Build the LLM prompt with all context
+        Build the LLM prompt with all context including category
         """
         # Categorize emotions
         positive_emotions = ["joy", "love", "gratitude", "admiration", "excitement", "optimism", "pride", "relief"]
@@ -126,6 +130,18 @@ class LLMRecommendationService:
         # Get top 3 emotions
         top_emotions = sorted(all_emotions.items(), key=lambda x: x[1], reverse=True)[:3]
         top_emotions_str = ", ".join([f"{e.capitalize()} ({p:.0%})" for e, p in top_emotions])
+        
+        # Add category context if available
+        category_section = ""
+        if category_context:
+            category = category_context.get("category", "Unknown")
+            cat_confidence = category_context.get("confidence", 0.0)
+            category_section = f"\n**Content Category:** {category} ({cat_confidence:.0%} confidence)"
+            
+            # Add category-specific guidance
+            from services.post_category_classifier import get_category_specific_prompt_addition
+            category_guidance = get_category_specific_prompt_addition(category)
+            category_section += f"\n**Analysis Focus:** {category_guidance}"
         
         # Build research context section
         research_section = ""
@@ -140,6 +156,7 @@ class LLMRecommendationService:
 **Customer Feedback Analysis:**
 
 **Summary:** {summary}
+{category_section}
 
 **Emotional Analysis:**
 - Overall Sentiment: {sentiment_category}

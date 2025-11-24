@@ -106,7 +106,8 @@ def summarize_text_local(text: str) -> str:
 def combine_emotion_and_summary(emotion_output: Dict[str, Any], 
                                summary: str, 
                                original_text: str,
-                               use_enhanced_ai: bool = False) -> Dict[str, Any]:
+                               use_enhanced_ai: bool = False,
+                               category_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Combine emotion analysis with summary to create intelligent output
     
@@ -115,10 +116,17 @@ def combine_emotion_and_summary(emotion_output: Dict[str, Any],
         summary: Generated text summary
         original_text: Original input text for context
         use_enhanced_ai: Whether to use LLM-powered recommendations (default: False)
+        category_context: Optional category detection results for context-aware insights
         
     Returns:
         Structured dictionary with combined insights
     """
+    # Add category to output if provided
+    result_base = {
+        "summary": summary,
+        "emotions": emotion_output.get("probabilities", {}),
+        "category": category_context if category_context else None
+    }
     # Extract dominant emotion
     all_emotions = emotion_output.get("probabilities", {})
     
@@ -145,7 +153,7 @@ def combine_emotion_and_summary(emotion_output: Dict[str, Any],
                 n_results=3
             )
             
-            # Generate LLM recommendation
+            # Generate LLM recommendation with category context
             llm_service = get_llm_service()
             if llm_service:
                 llm_result = llm_service.generate_recommendation(
@@ -153,7 +161,8 @@ def combine_emotion_and_summary(emotion_output: Dict[str, Any],
                     dominant_emotion=dominant_emotion,
                     all_emotions=all_emotions,
                     confidence=all_emotions.get(dominant_emotion, 0.0),
-                    research_context=research_context
+                    research_context=research_context,
+                    category_context=category_context
                 )
                 
                 suggested_action = llm_result.get("recommendation", "")
