@@ -831,8 +831,23 @@ def render_sentiment_pie_chart(sentiments: Dict[str, float]):
 
 def render_chat_interface():
     """Render Business Buddy chat interface"""
+    
+    # Root Cause Insight Section Header (appears once above chat)
     st.markdown("""
     <div class="glass-card" style="padding: 24px; margin-top: 2rem;">
+        <h3 style="color: #FFFFFF; margin-bottom: 0.5rem;">🔬 Root Cause Insight</h3>
+        <p style="color: #A8A9B3; font-size: 0.9rem;">
+            Get deeper analysis based on your customer feedback data. Ask questions to understand the root causes 
+            behind customer patterns and receive data-backed recommendations.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    spacer("sm")
+    
+    # Chat Interface
+    st.markdown("""
+    <div class="glass-card" style="padding: 24px; margin-top: 1rem;">
         <h3 style="color: #FFFFFF; margin-bottom: 0.5rem;">💬 Chat with Business Buddy</h3>
         <p style="color: #A8A9B3; margin-bottom: 1rem;">
             Ask questions about your customer feedback. Business Buddy is a senior customer insights analyst 
