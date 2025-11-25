@@ -392,6 +392,99 @@ def page_container():
     return st.container()
 
 
+def render_header():
+    """Render top navigation header"""
+    st.markdown("""
+    <style>
+    .header-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: rgba(17, 24, 39, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem 2rem;
+    }
+    
+    .header-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .header-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .header-logo-icon {
+        font-size: 1.75rem;
+    }
+    
+    .header-logo-text {
+        font-size: 1.25rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .header-nav {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .header-nav-link {
+        padding: 0.5rem 1rem;
+        color: #A8A9B3;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    .header-nav-link:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #FFFFFF;
+    }
+    
+    .header-nav-link.active {
+        background: rgba(6, 182, 212, 0.2);
+        color: #06B6D4;
+    }
+    
+    .main-content-with-header {
+        margin-top: 80px;
+    }
+    </style>
+    
+    <div class="header-container">
+        <div class="header-content">
+            <div class="header-logo">
+                <span class="header-logo-icon">🎭</span>
+                <span class="header-logo-text">EmoSense AI</span>
+            </div>
+            <div class="header-nav">
+                <a href="/app" class="header-nav-link">🏠 Home</a>
+                <a href="/about" class="header-nav-link">ℹ️ About</a>
+                <a href="/business_chatbot" class="header-nav-link active">🤝 Business Buddy</a>
+                <a href="/personal_chatbot" class="header-nav-link">💭 Personal Chat</a>
+                <a href="/Terms_and_Conditions" class="header-nav-link">📜 Terms</a>
+            </div>
+        </div>
+    </div>
+    <div class="main-content-with-header"></div>
+    """, unsafe_allow_html=True)
+
+
 def gradient_hero(title: str, subtitle: str):
     """Render gradient hero section"""
     st.markdown(f"""

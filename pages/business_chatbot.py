@@ -31,7 +31,8 @@ from components.layout import (
     inject_global_styles, 
     page_container,
     gradient_hero,
-    spacer
+    spacer,
+    render_header
 )
 from components.footer import render_footer
 
@@ -959,12 +960,15 @@ def render_chat_interface():
 # MAIN APP
 # ============================================================================
 
+# Render header at the top
+render_header()
+
 with page_container():
     st.markdown('<div class="main-container">', unsafe_allow_html=True)
     
     gradient_hero(
         "🤝 Business Buddy: Your Brand Therapist",
-        "Analyze customer feedback. Understand emotions. Take action. Your intelligent business analytics companion."
+        "Therapist for you and your brand."
     )
     
     spacer("lg")
