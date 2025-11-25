@@ -511,8 +511,11 @@ with page_container():
     # TESTIMONIALS
     st.markdown('<h2 class="section-title">What People Say</h2>', unsafe_allow_html=True)
     
-    st.markdown("""
-    <div class="testimonial-grid">
+    # Use Streamlit columns for testimonials
+    test_col1, test_col2, test_col3 = st.columns(3, gap="large")
+    
+    with test_col1:
+        st.markdown("""
         <div class="testimonial-card">
             <div class="testimonial-header">
                 <div class="testimonial-avatar">👨</div>
@@ -526,7 +529,10 @@ with page_container():
                 "EmoSense transformed how we understand customer feedback. The emotion detection is incredibly accurate and the insights are actionable."
             </p>
         </div>
-        
+        """, unsafe_allow_html=True)
+    
+    with test_col2:
+        st.markdown("""
         <div class="testimonial-card">
             <div class="testimonial-header">
                 <div class="testimonial-avatar">👩</div>
@@ -540,7 +546,10 @@ with page_container():
                 "The viral signal detection helped us identify and amplify content that resonates. Our engagement increased by 300%."
             </p>
         </div>
-        
+        """, unsafe_allow_html=True)
+    
+    with test_col3:
+        st.markdown("""
         <div class="testimonial-card">
             <div class="testimonial-header">
                 <div class="testimonial-avatar">🧑</div>
@@ -554,8 +563,7 @@ with page_container():
                 "Finally, an AI tool that truly understands emotions. The personal companion helped me understand my stress patterns better."
             </p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     spacer("lg")
     spacer("lg")
