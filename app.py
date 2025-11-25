@@ -401,50 +401,69 @@ with page_container():
                 st.switch_page("pages/Business_Chatbot.py")
     
     spacer("lg")
-    spacer("lg")
     
     # FEATURES SECTION
     st.markdown('<h2 class="section-title">Powerful Features</h2>', unsafe_allow_html=True)
     
-    st.markdown("""
-    <div class="feature-grid">
+    # First row of features
+    feat_col1, feat_col2, feat_col3 = st.columns(3, gap="large")
+    
+    with feat_col1:
+        st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">🧠</div>
             <h3>Emotion Detection</h3>
             <p>Advanced BERT model identifies 28 distinct emotions with high accuracy from any text input.</p>
         </div>
-        
+        """, unsafe_allow_html=True)
+    
+    with feat_col2:
+        st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">🚀</div>
             <h3>Viral Signal Prediction</h3>
             <p>Detect content with viral potential using our proprietary signal detection algorithms.</p>
         </div>
-        
+        """, unsafe_allow_html=True)
+    
+    with feat_col3:
+        st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">🔍</div>
             <h3>Root Cause Reasoning</h3>
             <p>Uncover the underlying reasons behind customer emotions and pain points automatically.</p>
         </div>
-        
+        """, unsafe_allow_html=True)
+    
+    # Second row of features
+    feat_col4, feat_col5, feat_col6 = st.columns(3, gap="large")
+    
+    with feat_col4:
+        st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">💡</div>
             <h3>Smart Business Insights</h3>
             <p>Get actionable recommendations powered by GPT-4 and research-backed strategies.</p>
         </div>
-        
+        """, unsafe_allow_html=True)
+    
+    with feat_col5:
+        st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">📊</div>
             <h3>Sentiment Dashboard</h3>
             <p>Beautiful visualizations showing emotion breakdowns, trends, and key metrics.</p>
         </div>
-        
+        """, unsafe_allow_html=True)
+    
+    with feat_col6:
+        st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">💛</div>
             <h3>Personal Emotion Journey</h3>
             <p>Track your emotional patterns over time with gentle AI-powered guidance.</p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     spacer("lg")
     
