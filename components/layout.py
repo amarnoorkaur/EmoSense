@@ -118,11 +118,11 @@ def inject_global_styles():
         border: none;
         border-radius: 50px;
         padding: 0.875rem 2rem;
-        font-weight: 700;
-        font-size: 1rem;
+        font-weight: 800;
+        font-size: 1.05rem;
         transition: all 0.3s ease;
         box-shadow: 0 4px 16px rgba(138, 92, 246, 0.3);
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
     
     .stButton > button:hover {
