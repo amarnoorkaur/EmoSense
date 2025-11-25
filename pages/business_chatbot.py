@@ -909,7 +909,7 @@ with page_container():
     st.markdown('<div class="main-container">', unsafe_allow_html=True)
     
     gradient_hero(
-        "🤝 Business Buddy — AI Strategy Assistant",
+        "🤝 Business Buddy: Your Brand Therapist",
         "Analyze customer feedback. Understand emotions. Take action. Your intelligent business analytics companion."
     )
     
@@ -1231,40 +1231,42 @@ with page_container():
         
         spacer("lg")
         
-        # Insights
-        st.markdown("""
-        <div class="glass-card" style="padding: 32px;">
-            <h3 style="color: #FFFFFF; margin-bottom: 1rem;">🧠 Strategic Insights</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        insights = st.session_state.analysis_insights
-        
-        col1, col2 = st.columns(2)
+        # Insights with Download Button
+        col1, col2 = st.columns([3, 1])
         
         with col1:
             st.markdown("""
-            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px;">
-                <h4 style="color: #8A5CF6; margin-bottom: 0.5rem;">💡 Reasoning</h4>
+            <div class="glass-card" style="padding: 32px;">
+                <h3 style="color: #FFFFFF; margin-bottom: 1rem;">🧠 Strategic Insights</h3>
             </div>
-            """, unsafe_allow_html=True)
-            st.markdown(f"""
-            <p style="color: #FFFFFF; line-height: 1.6; padding: 1rem;">
-                {insights.get('reasoning', 'No reasoning available')}
-            </p>
             """, unsafe_allow_html=True)
         
         with col2:
-            st.markdown("""
-            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px;">
-                <h4 style="color: #C06CFF; margin-bottom: 0.5rem;">🎯 Recommended Actions</h4>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown(f"""
-            <p style="color: #FFFFFF; line-height: 1.6; padding: 1rem;">
-                {insights.get('suggested_action', 'No suggestions available')}
-            </p>
-            """, unsafe_allow_html=True)
+            st.markdown("<div style='padding-top: 20px;'></div>", unsafe_allow_html=True)
+            report_json = prepare_business_report()
+            json_data = json.dumps(report_json, indent=2)
+            
+            st.download_button(
+                label="📥 Download Report",
+                data=json_data,
+                file_name=f"business_buddy_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                mime="application/json",
+                use_container_width=True
+            )
+        
+        insights = st.session_state.analysis_insights
+        
+        # Show only Recommended Actions (no Reasoning column)
+        st.markdown("""
+        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-top: 1rem;">
+            <h4 style="color: #C06CFF; margin-bottom: 0.5rem;">🎯 Recommended Actions</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <p style="color: #FFFFFF; line-height: 1.6; padding: 1rem;">
+            {insights.get('suggested_action', 'No suggestions available')}
+        </p>
+        """, unsafe_allow_html=True)
         
         spacer("lg")
         
@@ -1286,36 +1288,10 @@ with page_container():
             
             spacer("lg")
         
-        # Download
-        st.markdown("""
-        <div class="glass-card" style="padding: 32px;">
-            <h3 style="color: #FFFFFF; margin-bottom: 1rem;">💾 Export Business Report</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        spacer("sm")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            report_json = prepare_business_report()
-            json_data = json.dumps(report_json, indent=2)
-            
-            st.download_button(
-                label="📥 Download Full Report (JSON)",
-                data=json_data,
-                file_name=f"business_buddy_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json",
-                use_container_width=True
-            )
-        
-        with col2:
-            st.info("💡 Use this report for team discussions, presentations, or further analysis")
+        # CHAT INTERFACE - Moved before Download section
+        render_chat_interface()
         
         spacer("xl")
-        
-        # CHAT INTERFACE
-        render_chat_interface()
     
     spacer("xl")
     st.markdown('</div>', unsafe_allow_html=True)
