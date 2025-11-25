@@ -608,21 +608,21 @@ YOU MUST USE THIS CONTEXT IN EVERY SINGLE ANSWER.
 
 Structure EVERY response exactly like this:
 
-### 🔬 Root Cause Insight
+**🔬 Root Cause Analysis:**
 [Identify the UNDERLYING cause behind the customer pattern - WHY do customers feel this way?]
 [Reference pain point clusters and root cause analysis]
 
-### 🧠 Data Points Supporting This
+**🧠 Data Points Supporting This:**
 - Quote actual customer comments or reference specific patterns
 - Cite cluster names, sizes, and percentages
 - Reference root causes identified
 - Mention emotion percentages, themes, or frequencies
 
-### 🎯 Recommendation / Answer
+**🎯 Recommendation / Answer:**
 [Specific, actionable steps that directly address issues in the customer comments]
 [Each recommendation should tie back to something customers actually said]
 
-### 📈 Expected Impact
+**📈 Expected Impact:**
 [Explain how this solves the REAL customer issues found in your data]
 [Reference specific pain points or opportunities from the comments]
 
