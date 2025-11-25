@@ -608,9 +608,7 @@ YOU MUST USE THIS CONTEXT IN EVERY SINGLE ANSWER.
 
 Structure EVERY response exactly like this:
 
-**🔬 Root Cause Analysis:**
-[Identify the UNDERLYING cause behind the customer pattern - WHY do customers feel this way?]
-[Reference pain point clusters and root cause analysis]
+[Start directly with identifying the UNDERLYING cause behind the customer pattern - WHY do customers feel this way? Reference pain point clusters and root cause analysis.]
 
 **🧠 Data Points Supporting This:**
 - Quote actual customer comments or reference specific patterns
