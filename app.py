@@ -378,7 +378,7 @@ with page_container():
     st.markdown("""
     <div class="premium-hero">
         <h1>EmoSense AI</h1>
-        <p>Emotion-aware AI for humans and brands.</p>
+        <p>Therapist for YOU and your BRAND</p>
     </div>
     """, unsafe_allow_html=True)
     
