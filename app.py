@@ -336,7 +336,8 @@ st.markdown("""
 .carousel-wrapper {
     display: flex;
     gap: 2rem;
-    animation: scroll 20s linear infinite;
+    width: max-content;
+    animation: scroll 30s linear infinite;
 }
 
 .carousel-wrapper:hover {
