@@ -40,6 +40,11 @@ st.markdown("""
     to { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
 .premium-hero {
     position: relative;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
@@ -321,12 +326,21 @@ st.markdown("""
 }
 
 .carousel-container {
-    overflow-x: auto;
-    display: flex;
-    gap: 2rem;
+    overflow: hidden;
+    position: relative;
     padding: 2rem 0;
     margin: 2rem 0;
     animation: fadeInUp 1s ease-out 0.5s both;
+}
+
+.carousel-wrapper {
+    display: flex;
+    gap: 2rem;
+    animation: scroll 20s linear infinite;
+}
+
+.carousel-wrapper:hover {
+    animation-play-state: paused;
 }
 
 .carousel-item {
@@ -472,25 +486,48 @@ with page_container():
     
     st.markdown("""
     <div class="carousel-container">
-        <div class="carousel-item">
-            <div class="carousel-item-icon">🤝</div>
-            <div class="carousel-item-title">Business Buddy Dashboard</div>
-        </div>
-        <div class="carousel-item">
-            <div class="carousel-item-icon">💛</div>
-            <div class="carousel-item-title">Personal Companion UI</div>
-        </div>
-        <div class="carousel-item">
-            <div class="carousel-item-icon">📈</div>
-            <div class="carousel-item-title">Emotion Charts</div>
-        </div>
-        <div class="carousel-item">
-            <div class="carousel-item-icon">🚀</div>
-            <div class="carousel-item-title">Viral Signal UI</div>
-        </div>
-        <div class="carousel-item">
-            <div class="carousel-item-icon">🔍</div>
-            <div class="carousel-item-title">Root Cause Clustering</div>
+        <div class="carousel-wrapper">
+            <div class="carousel-item">
+                <div class="carousel-item-icon">🤝</div>
+                <div class="carousel-item-title">Business Buddy Dashboard</div>
+            </div>
+            <div class="carousel-item">
+                <div class="carousel-item-icon">💛</div>
+                <div class="carousel-item-title">Personal Companion UI</div>
+            </div>
+            <div class="carousel-item">
+                <div class="carousel-item-icon">📈</div>
+                <div class="carousel-item-title">Emotion Charts</div>
+            </div>
+            <div class="carousel-item">
+                <div class="carousel-item-icon">🚀</div>
+                <div class="carousel-item-title">Viral Signal UI</div>
+            </div>
+            <div class="carousel-item">
+                <div class="carousel-item-icon">🔍</div>
+                <div class="carousel-item-title">Root Cause Clustering</div>
+            </div>
+            <!-- Duplicate for seamless loop -->
+            <div class="carousel-item">
+                <div class="carousel-item-icon">🤝</div>
+                <div class="carousel-item-title">Business Buddy Dashboard</div>
+            </div>
+            <div class="carousel-item">
+                <div class="carousel-item-icon">💛</div>
+                <div class="carousel-item-title">Personal Companion UI</div>
+            </div>
+            <div class="carousel-item">
+                <div class="carousel-item-icon">📈</div>
+                <div class="carousel-item-title">Emotion Charts</div>
+            </div>
+            <div class="carousel-item">
+                <div class="carousel-item-icon">🚀</div>
+                <div class="carousel-item-title">Viral Signal UI</div>
+            </div>
+            <div class="carousel-item">
+                <div class="carousel-item-icon">🔍</div>
+                <div class="carousel-item-title">Root Cause Clustering</div>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
