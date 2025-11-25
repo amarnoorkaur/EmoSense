@@ -76,7 +76,13 @@ def init_session_state():
         "analysis_insights": {},
         "analysis_sentiments": {},
         "analysis_complete": False,
-        "crisis_alerts": []
+        "crisis_alerts": [],
+        # New: Persistent chat context
+        "chat_context_built": False,
+        "chat_system_prompt": "",
+        "extracted_themes": [],
+        "extracted_strengths": [],
+        "extracted_weaknesses": []
     }
     
     for key, value in defaults.items():
@@ -315,8 +321,11 @@ def extract_strengths_and_weaknesses(emotions: Dict[str, float], comments: List[
     }
 
 
-def build_chat_context() -> str:
-    """Build comprehensive chat context from analysis results"""
+def build_persistent_chat_context():
+    """
+    Build persistent chat context from analysis results.
+    This context is stored in session state and reused across all chat turns.
+    """
     emotions = st.session_state.analysis_emotions.get('aggregated_emotions', {})
     sentiments = st.session_state.analysis_sentiments
     summary = st.session_state.analysis_summary.get('macro_summary', '')
@@ -325,21 +334,59 @@ def build_chat_context() -> str:
     comments = st.session_state.analysis_raw_comments
     crisis_alerts = st.session_state.crisis_alerts
     
-    # Extract top emotions
-    top_emotions = sorted(emotions.items(), key=lambda x: x[1], reverse=True)[:8]
-    top_emotions_str = "\n".join([f"  - {e.capitalize()}: {p:.1%}" for e, p in top_emotions])
+    # Extract and store themes (persistent)
+    if not st.session_state.extracted_themes:
+        st.session_state.extracted_themes = extract_themes_from_comments(comments)
     
-    # Extract strengths and weaknesses
-    sw = extract_strengths_and_weaknesses(emotions, comments)
-    strengths_str = "\n".join([f"  ✅ {s}" for s in sw['strengths']]) if sw['strengths'] else "  (None detected)"
-    weaknesses_str = "\n".join([f"  ❌ {w}" for w in sw['weaknesses']]) if sw['weaknesses'] else "  (None detected)"
+    # Extract and store strengths/weaknesses (persistent)
+    if not st.session_state.extracted_strengths or not st.session_state.extracted_weaknesses:
+        sw = extract_strengths_and_weaknesses(emotions, comments)
+        st.session_state.extracted_strengths = sw['strengths']
+        st.session_state.extracted_weaknesses = sw['weaknesses']
     
-    # Extract themes (already done in analysis)
-    themes = extract_themes_from_comments(comments)
-    themes_str = ", ".join(themes[:12]) if themes else "No themes extracted"
+    # Use stored values
+    themes = st.session_state.extracted_themes
+    strengths = st.session_state.extracted_strengths
+    weaknesses = st.session_state.extracted_weaknesses
     
-    # Format crisis alerts
-    crisis_str = ""
+    # Format all data for system prompt
+    
+    # 1. Sentiment Overview
+    sentiment_text = f"""
+**📈 SENTIMENT OVERVIEW:**
+- Positive: {sentiments.get('positive', 0):.1%}
+- Negative: {sentiments.get('negative', 0):.1%}
+- Neutral: {sentiments.get('neutral', 0):.1%}
+- Overall Status: {sentiments.get('status', 'Unknown')}
+"""
+    
+    # 2. Top Emotions (top 10)
+    top_emotions = sorted(emotions.items(), key=lambda x: x[1], reverse=True)[:10]
+    emotions_text = "**🎭 TOP EMOTIONS DETECTED:**\n"
+    for emotion, prob in top_emotions:
+        emotions_text += f"  - {emotion.capitalize()}: {prob:.1%}\n"
+    
+    # 3. Strengths
+    strengths_text = "**💪 STRENGTHS (Positive Signals):**\n"
+    if strengths:
+        for s in strengths:
+            strengths_text += f"  ✅ {s}\n"
+    else:
+        strengths_text += "  (No significant positive emotions detected)\n"
+    
+    # 4. Weaknesses
+    weaknesses_text = "**⚠️ WEAKNESSES (Negative Signals):**\n"
+    if weaknesses:
+        for w in weaknesses:
+            weaknesses_text += f"  ❌ {w}\n"
+    else:
+        weaknesses_text += "  (No significant negative emotions detected)\n"
+    
+    # 5. Themes
+    themes_text = f"**🔍 KEY THEMES (Extracted Keywords):**\n{', '.join(themes[:15]) if themes else 'No themes extracted'}\n"
+    
+    # 6. Crisis Flags
+    crisis_text = ""
     if crisis_alerts:
         crisis_categories = {}
         for alert in crisis_alerts:
@@ -348,56 +395,213 @@ def build_chat_context() -> str:
                 crisis_categories[cat] = []
             crisis_categories[cat].append(alert['keyword'])
         
-        crisis_str = "\n**🚨 CRISIS FLAGS DETECTED:**\n"
+        crisis_text = "\n**🚨 CRISIS FLAGS DETECTED:**\n"
         for cat, keywords in crisis_categories.items():
-            crisis_str += f"  - {cat.capitalize()}: {', '.join(set(keywords))}\n"
+            crisis_text += f"  - {cat.capitalize()}: {', '.join(set(keywords))}\n"
+    else:
+        crisis_text = "\n**✅ NO CRISIS FLAGS DETECTED**\n"
     
-    # Sample comments (up to 15 for context)
-    comments_sample = comments[:15] if len(comments) > 15 else comments
-    comments_str = "\n".join([f'{i+1}. "{c[:150]}{"..." if len(c) > 150 else ""}"' for i, c in enumerate(comments_sample)])
-    
-    # Build context document
-    context = f"""
-═══════════════════════════════════════════════════════════════
-📊 CUSTOMER FEEDBACK DATASET - FULL ANALYSIS CONTEXT
-═══════════════════════════════════════════════════════════════
-
-**📈 SENTIMENT OVERVIEW:**
-- Positive: {sentiments.get('positive', 0):.1%}
-- Negative: {sentiments.get('negative', 0):.1%}
-- Neutral: {sentiments.get('neutral', 0):.1%}
-- Overall Status: {sentiments.get('status', 'Unknown')}
-
-**🎭 TOP EMOTIONS DETECTED:**
-{top_emotions_str}
-
-**💪 STRENGTHS (Positive Signals):**
-{strengths_str}
-
-**⚠️ WEAKNESSES (Negative Signals):**
-{weaknesses_str}
-
-**🔍 KEY THEMES (Extracted Keywords):**
-{themes_str}
-
+    # 7. Macro Summary
+    summary_text = f"""
 **📝 MACRO SUMMARY:**
 {summary}
-
-**📄 SAMPLE CUSTOMER COMMENTS ({len(comments_sample)} of {len(comments)} total):**
-{comments_str}
-{crisis_str}
-
+"""
+    
+    # 8. Raw Comments (sample - up to 20)
+    comments_sample = comments[:20] if len(comments) > 20 else comments
+    comments_text = f"**📄 CUSTOMER COMMENTS ({len(comments_sample)} of {len(comments)} total):**\n"
+    for i, comment in enumerate(comments_sample, 1):
+        comment_truncated = comment[:200] + "..." if len(comment) > 200 else comment
+        comments_text += f'{i}. "{comment_truncated}"\n'
+    
+    # 9. Micro Summaries (if available)
+    micro_text = ""
+    if micro_summaries and len(micro_summaries) > 0:
+        micro_text = f"\n**📋 MICRO SUMMARIES (First 5):**\n"
+        for i, ms in enumerate(micro_summaries[:5], 1):
+            micro_text += f'{i}. {ms.get("summary", "N/A")}\n'
+    
+    # 10. AI Insights
+    insights_text = f"""
 **💡 AI-GENERATED INSIGHTS:**
 {insights.get('suggested_action', 'No insights generated yet')}
+"""
+    
+    # 11. RAG Context (if available)
+    rag_text = ""
+    if insights.get('sources'):
+        rag_text = "\n**📚 RELEVANT MARKET RESEARCH:**\n"
+        for source in insights.get('sources', [])[:3]:
+            rag_text += f"  - {source.get('title', 'Unknown')} ({source.get('category', 'General')})\n"
+    
+    # Combine everything
+    full_context = f"""
+═══════════════════════════════════════════════════════════════
+📊 CUSTOMER FEEDBACK DATASET - COMPLETE ANALYSIS CONTEXT
+═══════════════════════════════════════════════════════════════
 
+{sentiment_text}
+{emotions_text}
+{strengths_text}
+{weaknesses_text}
+{themes_text}
+{crisis_text}
+{summary_text}
+{comments_text}
+{micro_text}
+{insights_text}
+{rag_text}
+
+═══════════════════════════════════════════════════════════════
+END OF CUSTOMER FEEDBACK CONTEXT
 ═══════════════════════════════════════════════════════════════
 """
     
-    return context
+    return full_context
+
+
+def build_chat_system_prompt() -> str:
+    """
+    Build the FULL system prompt with ALL customer insights.
+    This is called ONCE when analysis completes and stored in session state.
+    It's reused for EVERY chat turn to maintain context.
+    """
+    
+    # Get the full persistent context
+    context_data = build_persistent_chat_context()
+    
+    system_prompt = f"""You are Business Buddy — an expert AI consultant and senior customer insights analyst with 25+ years of experience in:
+
+- **Customer Analytics & Behavioral Psychology**
+- **UX Research & Product Strategy**
+- **Growth Marketing & Retention Optimization**
+- **Brand Management & Crisis Response**
+- **Data-Driven Decision Making**
+- **AI-Powered Business Intelligence**
+
+═══════════════════════════════════════════════════════════════
+🎯 YOUR CORE MISSION
+═══════════════════════════════════════════════════════════════
+
+You analyze and speak based ONLY on the uploaded customer comments provided below.
+You have been given a COMPLETE dataset of customer feedback with:
+- Raw customer comments
+- Emotion analysis
+- Sentiment breakdown
+- Extracted themes and patterns
+- Strengths and weaknesses
+- Crisis indicators
+- AI-generated insights
+
+YOU MUST USE THIS CONTEXT IN EVERY SINGLE ANSWER.
+
+═══════════════════════════════════════════════════════════════
+📊 CUSTOMER FEEDBACK CONTEXT (USE THIS FOR ALL ANSWERS)
+═══════════════════════════════════════════════════════════════
+
+{context_data}
+
+═══════════════════════════════════════════════════════════════
+🎯 HOW TO ANSWER QUESTIONS
+═══════════════════════════════════════════════════════════════
+
+**For ANY question the user asks, you MUST:**
+
+1. **Reference the actual customer comments**
+   - Quote specific comments when relevant
+   - Mention frequencies ("5 customers mentioned...", "appeared 3 times")
+   - Cite emotion patterns ("confusion at 38%", "joy at 62%")
+
+2. **Tie recommendations to REAL issues in the data**
+   - If they ask "What should I improve?" → Identify specific problems customers mentioned
+   - If they ask "What do customers love?" → Cite positive comments and emotions
+   - If they ask "How to reduce churn?" → Analyze frustration/disappointment patterns
+
+3. **Use the extracted insights**
+   - Themes (keywords that appear frequently)
+   - Strengths (what's working based on positive emotions)
+   - Weaknesses (what's broken based on negative emotions)
+   - Crisis flags (urgent issues detected)
+
+4. **Be specific, never generic**
+   ❌ BAD: "Improve user experience"
+   ✅ GOOD: "Fix the onboarding confusion mentioned by 6 customers who said 'I don't understand how to...' - this drives the 38% confusion emotion detected"
+
+5. **Support every claim with data**
+   - "Based on comment #3 and #7..."
+   - "The theme 'crashes' appears 8 times..."
+   - "Frustration emotion is at 42%, driven by..."
+
+═══════════════════════════════════════════════════════════════
+📋 MANDATORY ANSWER FORMAT (USE FOR EVERY RESPONSE)
+═══════════════════════════════════════════════════════════════
+
+Structure EVERY response exactly like this:
+
+### 🔍 Insight Based on Your Customer Feedback
+[Short interpretation grounded in the actual comment data]
+
+### 🧠 Data Points Supporting This
+- Quote actual customer comments or reference specific patterns
+- Cite emotion percentages, themes, or frequencies
+- Reference strengths/weaknesses detected
+
+### 🎯 Recommendation / Answer
+[Specific, actionable steps that directly address issues in the customer comments]
+[Each recommendation should tie back to something customers actually said]
+
+### 📈 Expected Impact
+[Explain how this solves the REAL customer issues found in your data]
+[Reference specific pain points or opportunities from the comments]
+
+═══════════════════════════════════════════════════════════════
+🚫 ABSOLUTELY FORBIDDEN
+═══════════════════════════════════════════════════════════════
+
+❌ Generic business advice not tied to the comments ("improve UX", "enhance marketing")
+❌ Suggesting fixes for problems NOT mentioned in customer feedback
+❌ Making up customer quotes or data
+❌ Giving textbook answers without referencing the dataset
+❌ Motivational fluff or vague statements
+❌ Answering questions unrelated to business/product insights
+❌ Forgetting previous context from earlier in the conversation
+❌ Ignoring the emotions, themes, or crisis flags provided
+
+**If asked something completely unrelated to business insights:**
+Respond: "I can only answer questions related to insights from the customer feedback you uploaded. Please ask about your customers, product, marketing, features, or business strategy."
+
+═══════════════════════════════════════════════════════════════
+🧠 MULTI-TURN CONVERSATION INTELLIGENCE
+═══════════════════════════════════════════════════════════════
+
+Remember: You have FULL CONTEXT for the entire conversation.
+- If user asks "What are my top weaknesses?" → Use the WEAKNESSES section
+- If user asks "How do I fix confusion?" → Find "confusion" in emotions and related comments
+- If user asks "What should my UX team prioritize?" → Reference specific UX issues mentioned
+- If user asks "Give me campaign ideas" → Use positive comments and strengths
+- If user asks "Why are customers annoyed?" → Find "annoyance" emotion and analyze related comments
+- If user asks follow-up questions → Build on previous answers using the SAME dataset
+
+═══════════════════════════════════════════════════════════════
+🎯 REMEMBER YOUR ROLE
+═══════════════════════════════════════════════════════════════
+
+You are NOT a generic AI.
+You are a $500/hour senior consultant analyzing THIS SPECIFIC business's customer feedback.
+Every answer must be deeply personalized to THEIR data.
+Quote their customers. Reference their specific issues. Solve their actual problems.
+
+Now answer the user's question using ONLY the customer feedback context provided above.
+"""
+    
+    return system_prompt
 
 
 def handle_business_chat_query(user_message: str) -> str:
-    """Handle chat query with full context-aware analysis"""
+    """
+    Handle chat query with FULL persistent context.
+    System prompt is built once and reused across all turns.
+    """
     client = get_openai_client()
     
     if not client:
@@ -407,113 +611,24 @@ def handle_business_chat_query(user_message: str) -> str:
     if not st.session_state.analysis_complete:
         return "⚠️ Please run an analysis first before chatting. Upload comments and click 'Analyze' button."
     
-    # Build comprehensive context
-    context = build_chat_context()
+    # Build system prompt ONCE if not already built, then reuse it
+    if not st.session_state.chat_context_built or not st.session_state.chat_system_prompt:
+        st.session_state.chat_system_prompt = build_chat_system_prompt()
+        st.session_state.chat_context_built = True
     
-    system_prompt = """You are a SENIOR CUSTOMER INSIGHTS ANALYST with 25+ years of experience in:
-- AI/ML product development
-- UX research & customer experience optimization
-- Brand management & product strategy
-- Growth marketing & retention analytics
-- Business consulting & data-driven decision making
-
-You are NOT a generic chatbot. You are a context-aware consultant analyzing REAL customer feedback.
-
-═══════════════════════════════════════════════════════════════
-🎯 YOUR ROLE & RESPONSIBILITIES
-═══════════════════════════════════════════════════════════════
-
-You have been provided with a complete customer feedback dataset including:
-- Raw customer comments
-- Emotion analysis
-- Sentiment breakdown
-- Key themes
-- Strengths and weaknesses
-- Crisis flags
-- AI-generated insights
-
-Your job is to answer user questions by:
-1. **ONLY using the provided customer data** (never make up information)
-2. **Quoting actual customer comments** when relevant
-3. **Referencing specific emotions and themes** detected in the data
-4. **Providing data-backed recommendations** tied to actual customer issues
-5. **Being specific, not generic** (e.g., not "improve UX" but "fix the onboarding confusion mentioned by 4 customers")
-
-═══════════════════════════════════════════════════════════════
-📋 ANSWER FORMAT (MANDATORY)
-═══════════════════════════════════════════════════════════════
-
-Structure EVERY response like this:
-
-### 🔍 Insight Based on Your Customer Feedback
-[Short interpretation based on the comment dataset]
-
-### 🧠 Data Points Supporting This
-- Quote or reference actual comments
-- Mention emotion patterns
-- Cite themes or frequencies
-
-### 🎯 Recommendation / Answer
-[Specific, actionable advice tailored to the uploaded comments]
-
-### 📈 Expected Impact
-[Explain how this addresses the real customer issues found in the data]
-
-═══════════════════════════════════════════════════════════════
-🚫 ABSOLUTELY FORBIDDEN
-═══════════════════════════════════════════════════════════════
-
-❌ Generic advice not tied to comments ("improve UX", "enhance marketing")
-❌ Suggestions for issues NOT mentioned in the customer feedback
-❌ Making up customer quotes or data points
-❌ Textbook answers without referencing the actual dataset
-❌ Motivational fluff or vague statements
-❌ Answering questions unrelated to business/customer insights
-
-If asked something unrelated to business insights, respond:
-"I can only answer questions related to insights from the customer feedback you uploaded."
-
-═══════════════════════════════════════════════════════════════
-🧠 REASONING GUIDELINES
-═══════════════════════════════════════════════════════════════
-
-- If asked about "improvements" → Identify actual issues from negative emotions/comments
-- If asked about "strengths" → Highlight positive emotions and what customers loved
-- If asked about "marketing" → Reference what resonated (positive comments) and what didn't
-- If asked about "features" → List actual feature requests mentioned in comments
-- If asked about "crisis" → Reference crisis flags and urgent issues
-- If asked about "retention" → Analyze disappointment, frustration, and what drives joy
-- If asked about "competitors" → Can only comment if mentioned in the dataset
-
-Be a data-driven analyst. Every statement should trace back to the customer feedback provided.
-
-═══════════════════════════════════════════════════════════════
-"""
-    
-    user_prompt = f"""
-{context}
-
-═══════════════════════════════════════════════════════════════
-❓ USER QUESTION
-═══════════════════════════════════════════════════════════════
-
-{user_message}
-
-═══════════════════════════════════════════════════════════════
-
-Now answer the user's question using ONLY the customer feedback data above.
-Follow the mandatory answer format. Be specific, quote actual comments, and provide data-backed insights.
-"""
+    # Use the persistent system prompt
+    system_prompt = st.session_state.chat_system_prompt
     
     try:
+        # Send request with persistent context
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_message}
             ],
-            temperature=0.6,  # Lower for more focused, data-driven responses
-            max_tokens=800  # More space for detailed analysis
+            temperature=0.6,  # Lower for focused, data-driven responses
+            max_tokens=900  # More space for detailed, multi-turn analysis
         )
         
         return response.choices[0].message.content
@@ -865,6 +980,10 @@ with page_container():
             progress_bar.progress(100)
             status_text.text("✅ Analysis complete!")
             st.session_state.analysis_complete = True
+            
+            # Reset chat context so it rebuilds with new data
+            st.session_state.chat_context_built = False
+            st.session_state.chat_system_prompt = ""
             
             import time
             time.sleep(0.5)
