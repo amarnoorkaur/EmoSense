@@ -155,7 +155,7 @@ class LLMRecommendationService:
         prompt = f"""
 **Customer Feedback Analysis:**
 
-**Summary:** {summary}
+**Summary of Customer Comments:** {summary}
 {category_section}
 
 **Emotional Analysis:**
@@ -166,15 +166,26 @@ class LLMRecommendationService:
 {research_section}
 
 **Your Task:**
-Generate a strategic business recommendation based on this sentiment analysis. Include:
+Analyze the customer feedback summary above and generate strategic business recommendations that DIRECTLY address the specific issues, complaints, praises, or requests mentioned in the comments.
 
-1. **Key Insight** (1-2 sentences about what the sentiment reveals)
-2. **Recommended Actions** (3-5 specific, actionable steps)
-3. **Expected Impact** (predicted outcomes or ROI if available from research)
+**CRITICAL INSTRUCTIONS:**
+- Base ALL recommendations on ACTUAL content from the customer feedback summary
+- If customers mention specific problems (e.g., bugs, pricing, features), address THOSE specific issues
+- If customers praise specific aspects, recommend ways to amplify THOSE strengths
+- DO NOT suggest generic improvements unrelated to the actual feedback
+- Quote or reference specific themes from the customer comments
 
-If market research is provided, reference specific studies/data. Be concise, professional, and business-focused.
+**Required Output Format:**
 
-Format your response with clear headings and bullet points for readability.
+1. **Key Insight** (What are customers actually saying? What specific patterns or themes emerge from their comments?)
+
+2. **Recommended Actions** (3-5 specific steps that directly address the issues or opportunities mentioned in the feedback)
+   - Each action should reference a specific customer concern or praise from the comments
+   - Be actionable and specific, not generic
+
+3. **Expected Impact** (How will addressing these specific customer concerns improve your business?)
+
+Be concise, professional, and laser-focused on the ACTUAL customer feedback content.
 """
         
         return prompt
