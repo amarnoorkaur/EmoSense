@@ -70,6 +70,14 @@ except Exception as e:
     ROOT_CAUSE_AVAILABLE = False
     print(f"Root cause engine unavailable: {e}")
 
+# Viral signal detection
+try:
+    from services.viral_signal_detector import get_viral_detector
+    VIRAL_DETECTOR_AVAILABLE = True
+except Exception as e:
+    VIRAL_DETECTOR_AVAILABLE = False
+    print(f"Viral detector unavailable: {e}")
+
 # OpenAI for chat
 from openai import OpenAI
 
@@ -100,7 +108,9 @@ def init_session_state():
         "extracted_weaknesses": [],
         # New: Pain point clustering & root cause analysis
         "pain_point_clusters": None,
-        "root_causes": None
+        "root_causes": None,
+        # New: Viral signal analysis
+        "viral_signals": None
     }
     
     for key, value in defaults.items():
@@ -489,6 +499,26 @@ def build_persistent_chat_context():
     - Action: {rc['actionable_insight'][:100]}...
 """
     
+    # 14. Viral Signals (NEW)
+    viral_text = ""
+    if st.session_state.viral_signals:
+        vs = st.session_state.viral_signals
+        viral_text = f"""
+**🔥 VIRAL CONTENT SIGNALS:**
+  - Viral Score: {vs['viral_score']}/100 ({vs['viral_level']} potential)
+  - Positivity: {vs['signals_detected'].get('positivity_index', 0):.2f}
+  - Novelty/WOW: {vs['signals_detected'].get('novelty_score', 0):.2f}
+  - Humor: {vs['signals_detected'].get('humor_score', 0):.2f}
+  - Engagement Intent: {vs['signals_detected'].get('engagement_intent_score', 0):.2f}
+  - Trend Alignment: {vs['signals_detected'].get('trend_alignment_score', 0):.2f}
+  - Repetition: {vs['signals_detected'].get('repetition_score', 0):.2f}
+  - Explanation: {vs['explanation']}
+"""
+        if vs.get('top_viral_comments'):
+            viral_text += f"  - Top Viral Comments:\n"
+            for i, comment in enumerate(vs['top_viral_comments'][:3], 1):
+                viral_text += f'    {i}. "{comment[:100]}..."\n'
+    
     # Combine everything
     full_context = f"""
 ═══════════════════════════════════════════════════════════════
@@ -501,6 +531,7 @@ def build_persistent_chat_context():
 {weaknesses_text}
 {themes_text}
 {crisis_text}
+{viral_text}
 {summary_text}
 {comments_text}
 {micro_text}
@@ -580,12 +611,22 @@ YOU MUST USE THIS CONTEXT IN EVERY SINGLE ANSWER.
    - Focus on underlying causes, not symptoms
    - Connect cause → effect → solution
 
-4. **Tie recommendations to REAL issues in the data**
+4. **Leverage Viral Signal Intelligence (if available)**
+   - Reference viral score and level when discussing content strategy
+   - Quote comments with high novelty/humor/engagement signals
+   - Connect viral potential to customer emotions
+   - If user asks about "going viral", "content strategy", "social media", "marketing" → USE VIRAL SIGNALS
+   - Examples:
+     - "Your humor score of 0.42 suggests comedic voice resonates"
+     - "High engagement intent (35% of comments) indicates shareability"
+     - "Novelty signals suggest highlighting the unique/surprising aspect"
+
+5. **Tie recommendations to REAL issues in the data**
    - If they ask "What should I improve?" → Cite root causes from clusters
    - If they ask "What do customers love?" → Reference positive clusters
    - If they ask "How to reduce churn?" → Address root causes of frustration/disappointment
 
-5. **Use ALL extracted insights**
+6. **Use ALL extracted insights**
    - Themes (keywords that appear frequently)
    - Strengths (what's working based on positive emotions)
    - Weaknesses (what's broken based on negative emotions)
@@ -1106,6 +1147,25 @@ with page_container():
             else:
                 st.session_state.root_causes = None
             
+            # NEW: Viral signal detection
+            if VIRAL_DETECTOR_AVAILABLE and use_enhanced_ai:
+                status_text.text("🔥 Analyzing viral content signals...")
+                progress_bar.progress(96)
+                
+                try:
+                    viral_detector = get_viral_detector()
+                    viral_result = viral_detector.analyze_viral_signals(
+                        raw_comments=csv_comments,
+                        emotions=emotion_results['aggregated_emotions'],
+                        emotion_counts=emotion_results.get('emotion_counts', {})
+                    )
+                    st.session_state.viral_signals = viral_result
+                except Exception as e:
+                    print(f"Viral signal analysis error: {e}")
+                    st.session_state.viral_signals = None
+            else:
+                st.session_state.viral_signals = None
+            
             # Regenerate insights with clusters and root causes (if enhanced AI enabled)
             if use_enhanced_ai and (st.session_state.pain_point_clusters or st.session_state.root_causes):
                 status_text.text("🔬 Regenerating insights with root cause analysis...")
@@ -1295,6 +1355,105 @@ with page_container():
             
             for alert in st.session_state.crisis_alerts[:5]:
                 st.warning(f"**{alert['category'].upper()}**: *{alert['keyword']}* — {alert['text']}")
+            
+            spacer("lg")
+        
+        # Viral Signals Visualization (NEW)
+        if st.session_state.viral_signals:
+            vs = st.session_state.viral_signals
+            
+            st.markdown("""
+            <div class="glass-card" style="padding: 32px; border-left: 4px solid #FF6B35;">
+                <h3 style="color: #FF6B35; margin-bottom: 1rem;">🔥 Viral Content Signal Analysis</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            spacer("sm")
+            
+            # Viral Score Meter
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.markdown(f"""
+                <div style="background: rgba(255,107,53,0.1); padding: 24px; border-radius: 12px;">
+                    <h2 style="color: #FF6B35; margin: 0; font-size: 3rem; text-align: center;">
+                        {vs['viral_score']}/100
+                    </h2>
+                    <p style="color: #FFFFFF; text-align: center; margin-top: 8px; font-size: 1.2rem;">
+                        {vs['viral_level']} Viral Potential
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                # Visual level indicator
+                level_color = {
+                    "Low": "#6B7280",
+                    "Moderate": "#FBBF24",
+                    "High": "#F97316",
+                    "Extremely High": "#EF4444"
+                }.get(vs['viral_level'], "#6B7280")
+                
+                st.markdown(f"""
+                <div style="background: rgba(255,255,255,0.05); padding: 24px; border-radius: 12px; text-align: center;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; 
+                                background: {level_color}; margin: 0 auto; 
+                                display: flex; align-items: center; justify-content: center;">
+                        <span style="font-size: 2rem;">🔥</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            spacer("sm")
+            
+            # Signals Breakdown
+            st.markdown("""
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-top: 1rem;">
+                <h4 style="color: #FF6B35; margin-bottom: 1rem;">📊 Signal Breakdown</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            signals = vs['signals_detected']
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("😊 Positivity", f"{signals.get('positivity_index', 0):.0%}")
+                st.metric("😂 Humor", f"{signals.get('humor_score', 0):.0%}")
+            
+            with col2:
+                st.metric("✨ Novelty/WOW", f"{signals.get('novelty_score', 0):.0%}")
+                st.metric("🔁 Repetition", f"{signals.get('repetition_score', 0):.0%}")
+            
+            with col3:
+                st.metric("💬 Engagement Intent", f"{signals.get('engagement_intent_score', 0):.0%}")
+                st.metric("📈 Trend Alignment", f"{signals.get('trend_alignment_score', 0):.0%}")
+            
+            spacer("sm")
+            
+            # Explanation
+            st.markdown("""
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-top: 1rem;">
+                <h4 style="color: #FF6B35; margin-bottom: 0.5rem;">💡 Why These Signals Matter</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <p style="color: #FFFFFF; line-height: 1.6; padding: 1rem;">
+                {vs['explanation']}
+            </p>
+            """, unsafe_allow_html=True)
+            
+            # Top Viral Comments
+            if vs.get('top_viral_comments'):
+                st.markdown("""
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-top: 1rem;">
+                    <h4 style="color: #FF6B35; margin-bottom: 0.5rem;">🌟 Top Viral-Signal Comments</h4>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                for i, comment in enumerate(vs['top_viral_comments'], 1):
+                    st.info(f"**{i}.** {comment}")
             
             spacer("lg")
         
