@@ -1,6 +1,7 @@
 """
 EmoSense AI - Premium Landing Page
 Modern glassmorphic design with animations and premium AI startup aesthetics
+Version: 2.0
 """
 import streamlit as st
 from components.layout import set_page_config, inject_global_styles, page_container, spacer
