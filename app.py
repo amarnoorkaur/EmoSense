@@ -30,11 +30,11 @@ with page_container():
         
         with btn_col1:
             if st.button("💛 Personal Emotion Companion", use_container_width=True, type="primary"):
-                st.switch_page("pages/personal_chatbot.py")
+                st.switch_page("pages/Personal_Chatbot.py")
         
         with btn_col2:
             if st.button("🤝 Business Buddy", use_container_width=True, type="primary"):
-                st.switch_page("pages/business_chatbot.py")
+                st.switch_page("pages/Business_Chatbot.py")
     
     spacer("lg")
     

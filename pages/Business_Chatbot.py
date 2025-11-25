@@ -968,7 +968,7 @@ with page_container():
     
     gradient_hero(
         "EmoSense AI",
-        "Therapist for YOU and your BRAND"
+        "Therapist for YOU & BRAND"
     )
     
     spacer("lg")
