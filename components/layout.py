@@ -52,11 +52,11 @@ def inject_global_styles():
     
     /* === GRADIENT HERO === */
     .gradient-hero {
-        background: linear-gradient(135deg, #8A5CF6, #C06CFF);
+        background: linear-gradient(135deg, #06B6D4, #3B82F6);
         border-radius: 24px;
         padding: 3rem 2rem;
         text-align: center;
-        box-shadow: 0 20px 60px rgba(138, 92, 246, 0.4);
+        box-shadow: 0 20px 60px rgba(6, 182, 212, 0.4);
         margin-bottom: 2rem;
         position: relative;
         overflow: hidden;
