@@ -114,14 +114,15 @@ def inject_global_styles():
     /* === BUTTONS === */
     .stButton > button {
         background: linear-gradient(135deg, #8A5CF6, #C06CFF);
-        color: white;
+        color: #FFFFFF !important;
         border: none;
         border-radius: 50px;
         padding: 0.875rem 2rem;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 1rem;
         transition: all 0.3s ease;
         box-shadow: 0 4px 16px rgba(138, 92, 246, 0.3);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
     
     .stButton > button:hover {
