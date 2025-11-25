@@ -967,8 +967,8 @@ with page_container():
     st.markdown('<div class="main-container">', unsafe_allow_html=True)
     
     gradient_hero(
-        "🤝 Business Buddy: Your Brand Therapist",
-        "Therapist for you and your brand."
+        "EmoSense AI",
+        "Therapist for YOU and your BRAND"
     )
     
     spacer("lg")
