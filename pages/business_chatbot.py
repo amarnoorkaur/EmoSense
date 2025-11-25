@@ -419,7 +419,12 @@ def build_persistent_chat_context():
     if micro_summaries and len(micro_summaries) > 0:
         micro_text = f"\n**📋 MICRO SUMMARIES (First 5):**\n"
         for i, ms in enumerate(micro_summaries[:5], 1):
-            micro_text += f'{i}. {ms.get("summary", "N/A")}\n'
+            # Handle both string and dict formats
+            if isinstance(ms, dict):
+                summary_content = ms.get("summary", "N/A")
+            else:
+                summary_content = str(ms)
+            micro_text += f'{i}. {summary_content}\n'
     
     # 10. AI Insights
     insights_text = f"""
