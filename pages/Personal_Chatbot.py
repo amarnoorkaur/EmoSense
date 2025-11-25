@@ -165,10 +165,10 @@ with page_container():
             </div>
             """, unsafe_allow_html=True)
         else:
-            # Display conversation
+            # Display conversation (newest first)
             st.markdown('<div style="max-height: 600px; overflow-y: auto; padding-right: 0.5rem; margin-top: 1rem;">', unsafe_allow_html=True)
             
-            for entry in st.session_state.personal_history:
+            for entry in reversed(st.session_state.personal_history):
                 # User message
                 st.markdown(f"""
                 <div class="message-user fade-in">
