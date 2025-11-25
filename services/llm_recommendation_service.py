@@ -37,7 +37,9 @@ class LLMRecommendationService:
                                category_context: Dict[str, Any] = None,
                                raw_comments: List[str] = None,
                                top_themes: List[str] = None,
-                               crisis_flags: List[str] = None) -> Dict[str, Any]:
+                               crisis_flags: List[str] = None,
+                               pain_point_clusters: List[Dict[str, Any]] = None,
+                               root_causes: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Generate dynamic business recommendation using LLM
         
@@ -48,14 +50,16 @@ class LLMRecommendationService:
             confidence: Confidence level (0-1)
             research_context: Retrieved market research documents
             category_context: Optional post category detection results
-            raw_comments: List of actual customer comments (NEW)
-            top_themes: Extracted keywords/themes from comments (NEW)
-            crisis_flags: Crisis keywords detected (NEW)
+            raw_comments: List of actual customer comments
+            top_themes: Extracted keywords/themes from comments
+            crisis_flags: Crisis keywords detected
+            pain_point_clusters: Clustered customer feedback themes
+            root_causes: Root cause analysis per cluster
             
         Returns:
             Dictionary with recommendation, reasoning, and sources
         """
-        # Build prompt with all context including raw comments
+        # Build prompt with all context including clusters and root causes
         prompt = self._build_prompt(
             summary=summary,
             dominant_emotion=dominant_emotion,
@@ -65,7 +69,9 @@ class LLMRecommendationService:
             category_context=category_context,
             raw_comments=raw_comments,
             top_themes=top_themes,
-            crisis_flags=crisis_flags
+            crisis_flags=crisis_flags,
+            pain_point_clusters=pain_point_clusters,
+            root_causes=root_causes
         )
         
         try:
@@ -77,17 +83,19 @@ class LLMRecommendationService:
                         "role": "system",
                         "content": """You are an expert UX researcher + marketing strategist analyzing real customer feedback.
 
-Your ONLY job: Generate hyper-specific, comment-grounded business recommendations.
+Your ONLY job: Generate hyper-specific, comment-grounded business recommendations using root cause analysis.
 
 ABSOLUTE RULES:
 1. EVERY recommendation must cite actual customer comments
 2. NO generic advice (e.g., "improve UX", "enhance marketing")
 3. NO suggestions outside what customers explicitly mentioned
 4. Quote customer phrases verbatim when possible
-5. Mention frequency when relevant (e.g., "6 commenters requested...")
-6. Tie business impact directly to the specific customer pain
+5. Use pain point clusters to identify common themes
+6. Apply root cause reasoning: Fix the WHY, not the WHAT
+7. Mention cluster sizes and percentages when relevant (e.g., "28% of feedback relates to...")
+8. Tie business impact directly to the specific customer pain AND its underlying cause
 
-You are a data-driven analyst, NOT a textbook marketer."""
+You are a data-driven analyst focused on root causes, NOT a textbook marketer."""
                     },
                     {
                         "role": "user",
@@ -138,12 +146,11 @@ You are a data-driven analyst, NOT a textbook marketer."""
                      category_context: Dict[str, Any] = None,
                      raw_comments: List[str] = None,
                      top_themes: List[str] = None,
-                     crisis_flags: List[str] = None) -> str:
+                     crisis_flags: List[str] = None,
+                     pain_point_clusters: List[Dict[str, Any]] = None,
+                     root_causes: List[Dict[str, Any]] = None) -> str:
         """
-        Build hyper-specific, comment-grounded prompt
-        """
-        """
-        Build hyper-specific, comment-grounded prompt
+        Build hyper-specific, comment-grounded prompt with cluster and root cause analysis
         """
         # Categorize emotions
         positive_emotions = ["joy", "love", "gratitude", "admiration", "excitement", "optimism", "pride", "relief"]
@@ -177,6 +184,41 @@ You are a data-driven analyst, NOT a textbook marketer."""
         if crisis_flags and len(crisis_flags) > 0:
             crisis_section = f"\n\n**🚨 CRISIS KEYWORDS DETECTED:** {', '.join(set(crisis_flags))}"
         
+        # Build pain point clusters section
+        clusters_section = ""
+        if pain_point_clusters and len(pain_point_clusters) > 0:
+            clusters_section = "\n\n**🎯 PAIN POINT CLUSTERS (Grouped Customer Themes):**\n"
+            for cluster in pain_point_clusters:
+                cluster_id = cluster.get("cluster_id", "?")
+                theme = cluster.get("theme_name", "Unknown Theme")
+                size = cluster.get("size", 0)
+                percentage = cluster.get("percentage", 0)
+                keywords = cluster.get("theme_keywords", [])
+                sentiment = cluster.get("sentiment_summary", {})
+                examples = cluster.get("comment_examples", [])
+                
+                clusters_section += f"\n**Cluster {cluster_id}: {theme}** ({size} comments, {percentage:.1f}% of feedback)\n"
+                clusters_section += f"  Keywords: {', '.join(keywords[:5])}\n"
+                clusters_section += f"  Sentiment: {sentiment.get('dominant', 'neutral')} ({sentiment.get('positive', 0):.0%} positive, {sentiment.get('negative', 0):.0%} negative)\n"
+                if examples:
+                    clusters_section += f"  Example: \"{examples[0][:120]}...\"\n"
+        
+        # Build root causes section
+        root_causes_section = ""
+        if root_causes and len(root_causes) > 0:
+            root_causes_section = "\n\n**🔬 ROOT CAUSE ANALYSIS (WHY Customers Feel This Way):**\n"
+            for rc in root_causes:
+                theme = rc.get("theme_name", "Unknown")
+                cause = rc.get("root_cause", "Unknown cause")
+                evidence = rc.get("evidence", [])
+                action = rc.get("actionable_insight", "No action")
+                
+                root_causes_section += f"\n**{theme}:**\n"
+                root_causes_section += f"  Root Cause: {cause[:200]}\n"
+                if evidence:
+                    root_causes_section += f"  Evidence: \"{evidence[0][:120]}...\"\n"
+                root_causes_section += f"  Recommended Action: {action[:150]}\n"
+        
         # Add category context if available
         category_section = ""
         if category_context:
@@ -208,6 +250,8 @@ You are a data-driven analyst, NOT a textbook marketer."""
 {category_section}
 {comments_section}
 {themes_section}
+{clusters_section}
+{root_causes_section}
 {crisis_section}
 {research_section}
 
@@ -217,62 +261,77 @@ You are a data-driven analyst, NOT a textbook marketer."""
 
 **CRITICAL INSTRUCTIONS:**
 
-1. **ONLY recommend things DIRECTLY mentioned in the comments above**
+1. **USE PAIN POINT CLUSTERS (if provided):**
+   - Reference clusters by name and percentage (e.g., "Cluster 2: Pricing Concerns (28% of feedback)")
+   - Use clusters to identify patterns across multiple comments
+   - Group recommendations by cluster themes when possible
+
+2. **APPLY ROOT CAUSE REASONING (CRITICAL):**
+   - Identify the WHY behind customer feelings, not just WHAT they said
+   - Example: NOT "Users are confused" → YES "Users are confused BECAUSE onboarding doesn't explain pricing tiers"
+   - Every recommendation must address the underlying cause
+   - Reference root causes provided in the analysis above
+
+3. **ONLY recommend things DIRECTLY mentioned in the comments above**
    - If no one mentioned "dark mode", DO NOT suggest it
    - If no one mentioned bugs, DO NOT suggest fixing bugs
    - Every recommendation MUST tie to actual customer words
 
-2. **Identify REAL issues from the comments:**
+4. **Identify REAL issues from the comments:**
    - Bugs/crashes (quote the error descriptions)
    - UI confusion (quote confusing parts)
    - Feature requests (quote exactly what they asked for)
    - Pricing complaints (quote their concerns)
    - Emotional patterns (reference specific comments showing frustration/joy)
 
-3. **For EACH recommendation, you MUST include:**
+5. **For EACH recommendation, you MUST include:**
    ✅ Direct quote(s) from actual comments
-   ✅ How many commenters mentioned this (if >1)
-   ✅ Why this matters (root cause analysis)
-   ✅ Specific action step (not generic advice)
-   ✅ Expected impact tied to that exact issue
+   ✅ How many commenters mentioned this (if >1) OR cluster percentage
+   ✅ Root cause analysis (WHY this is happening)
+   ✅ Specific action step targeting the root cause (not symptom)
+   ✅ Expected impact tied to fixing the underlying cause
 
-4. **GROUP similar comments by theme:**
+6. **GROUP similar comments by theme or use provided clusters:**
    Examples:
    - "Product Quality Issues" (if multiple mention defects)
    - "App Performance Problems" (if multiple mention crashes)
    - "Feature Requests" (if multiple request same thing)
    - "Onboarding Confusion" (if multiple don't understand something)
+   OR use the pain point clusters provided above
 
-5. **Use this EXACT format for each recommendation:**
+7. **Use this EXACT format for each recommendation:**
 
 ---
 ### Issue [number]: [Specific Problem from Comments]
+*[If using clusters: Cluster X: Theme Name (Y% of feedback)]*
 
 **Evidence from Comments:**
 - "quote 1"
 - "quote 2"
 - "quote 3"
-[Mention frequency: "X commenters mentioned this"]
+[Mention frequency: "X commenters mentioned this" OR "Z% of feedback"]
 
-**Why This Matters:**
-[Root cause - what's actually broken/missing]
+**Root Cause Analysis (WHY this is happening):**
+[Identify the underlying cause - not just symptoms]
+[Reference root cause from analysis if provided]
 
-**Recommended Action:**
-1. [Specific step 1 - NOT generic]
-2. [Specific step 2 - NOT generic]
+**Recommended Action (targeting root cause):**
+1. [Specific step 1 - fixes the WHY, not the WHAT]
+2. [Specific step 2 - addresses underlying issue]
 
 **Expected Impact:**
-[How fixing THIS exact issue helps your business]
+[How fixing the ROOT CAUSE helps your business]
 ---
 
-6. **ABSOLUTELY FORBIDDEN:**
+8. **ABSOLUTELY FORBIDDEN:**
    ❌ "Improve user experience" (too vague)
    ❌ "Enhance marketing strategy" (not tied to comments)
    ❌ "Add more features" (which features? who asked?)
    ❌ "Optimize performance" (unless crashes were mentioned)
    ❌ ANY suggestion not backed by actual comment content
+   ❌ Fixing symptoms without addressing root causes
 
-7. **CRISIS HANDLING:**
+9. **CRISIS HANDLING:**
    If crisis keywords detected, add this section FIRST:
    
 ---
@@ -285,9 +344,9 @@ You are a data-driven analyst, NOT a textbook marketer."""
 [Specific crisis response - refund flow, apology messaging, etc.]
 ---
 
-8. **TONE:** Professional UX researcher. Data-driven. Specific. Brief.
+10. **TONE:** Professional UX researcher. Data-driven. Specific. Brief.
 
-9. **DELIVERABLE:** Provide 3-5 recommendations (fewer if comments are limited).
+11. **DELIVERABLE:** Provide 3-5 recommendations (fewer if comments are limited).
 
 ═══════════════════════════════════════════════════════════════
 

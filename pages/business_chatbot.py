@@ -1,5 +1,5 @@
 """
-🤝 Business Buddy - AI Strategy Assistant
+🤝 Business Buddy: Your brand therapist
 Full-featured business analytics with conversational AI
 
 Features:
@@ -55,6 +55,21 @@ try:
 except Exception as e:
     RAG_AVAILABLE = False
 
+# Pain point clustering and root cause analysis
+try:
+    from services.clustering_service import cluster_comments
+    CLUSTERING_AVAILABLE = True
+except Exception as e:
+    CLUSTERING_AVAILABLE = False
+    print(f"Clustering unavailable: {e}")
+
+try:
+    from services.root_cause_engine import get_root_cause_engine
+    ROOT_CAUSE_AVAILABLE = True
+except Exception as e:
+    ROOT_CAUSE_AVAILABLE = False
+    print(f"Root cause engine unavailable: {e}")
+
 # OpenAI for chat
 from openai import OpenAI
 
@@ -82,7 +97,10 @@ def init_session_state():
         "chat_system_prompt": "",
         "extracted_themes": [],
         "extracted_strengths": [],
-        "extracted_weaknesses": []
+        "extracted_weaknesses": [],
+        # New: Pain point clustering & root cause analysis
+        "pain_point_clusters": None,
+        "root_causes": None
     }
     
     for key, value in defaults.items():
@@ -183,7 +201,9 @@ def run_rag_llm_analysis(
     dominant_emotion: str,
     original_text: str,
     raw_comments: List[str] = None,
-    use_enhanced: bool = False
+    use_enhanced: bool = False,
+    pain_point_clusters: List[Dict[str, Any]] = None,
+    root_causes: List[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """Run RAG + LLM analysis for enhanced insights"""
     emotion_output = {"probabilities": emotions}
@@ -205,7 +225,9 @@ def run_rag_llm_analysis(
         category_context=None,
         raw_comments=raw_comments,
         top_themes=top_themes,
-        crisis_flags=crisis_flags
+        crisis_flags=crisis_flags,
+        pain_point_clusters=pain_point_clusters,
+        root_causes=root_causes
     )
     
     return result
@@ -439,6 +461,34 @@ def build_persistent_chat_context():
         for source in insights.get('sources', [])[:3]:
             rag_text += f"  - {source.get('title', 'Unknown')} ({source.get('category', 'General')})\n"
     
+    # 12. Pain Point Clusters (NEW)
+    clusters_text = ""
+    if st.session_state.pain_point_clusters and st.session_state.pain_point_clusters.get('clusters'):
+        clusters = st.session_state.pain_point_clusters['clusters']
+        clusters_text = f"\n**🎯 PAIN POINT CLUSTERS ({len(clusters)} clusters identified):**\n"
+        for cluster in clusters:
+            clusters_text += f"""
+  Cluster {cluster['cluster_id']}: {cluster['theme_name']}
+    - Size: {cluster['size']} comments ({cluster['percentage']:.1f}%)
+    - Keywords: {', '.join(cluster['theme_keywords'])}
+    - Sentiment: {cluster['sentiment_summary']['status']}
+    - Example: "{cluster['comment_examples'][0][:100]}..."
+"""
+    
+    # 13. Root Causes (NEW)
+    root_causes_text = ""
+    if st.session_state.root_causes and st.session_state.root_causes.get('root_causes'):
+        root_causes = st.session_state.root_causes['root_causes']
+        root_causes_text = f"\n**🔬 ROOT CAUSE ANALYSIS ({len(root_causes)} causes identified):**\n"
+        for rc in root_causes:
+            evidence_preview = rc['evidence'][0][:80] + "..." if rc['evidence'] else "No evidence"
+            root_causes_text += f"""
+  {rc['theme_name']}:
+    - Root Cause: {rc['root_cause'][:150]}...
+    - Evidence: "{evidence_preview}"
+    - Action: {rc['actionable_insight'][:100]}...
+"""
+    
     # Combine everything
     full_context = f"""
 ═══════════════════════════════════════════════════════════════
@@ -456,6 +506,8 @@ def build_persistent_chat_context():
 {micro_text}
 {insights_text}
 {rag_text}
+{clusters_text}
+{root_causes_text}
 
 ═══════════════════════════════════════════════════════════════
 END OF CUSTOMER FEEDBACK CONTEXT
@@ -517,25 +569,38 @@ YOU MUST USE THIS CONTEXT IN EVERY SINGLE ANSWER.
    - Mention frequencies ("5 customers mentioned...", "appeared 3 times")
    - Cite emotion patterns ("confusion at 38%", "joy at 62%")
 
-2. **Tie recommendations to REAL issues in the data**
-   - If they ask "What should I improve?" → Identify specific problems customers mentioned
-   - If they ask "What do customers love?" → Cite positive comments and emotions
-   - If they ask "How to reduce churn?" → Analyze frustration/disappointment patterns
+2. **Use Pain Point Clusters (if available)**
+   - Reference specific clusters by name
+   - Cite cluster size and percentage
+   - Use cluster keywords and themes
 
-3. **Use the extracted insights**
+3. **Apply Root Cause Reasoning (CRITICAL)**
+   - Identify WHY customers feel what they feel (not just WHAT)
+   - Use the root cause analysis provided
+   - Focus on underlying causes, not symptoms
+   - Connect cause → effect → solution
+
+4. **Tie recommendations to REAL issues in the data**
+   - If they ask "What should I improve?" → Cite root causes from clusters
+   - If they ask "What do customers love?" → Reference positive clusters
+   - If they ask "How to reduce churn?" → Address root causes of frustration/disappointment
+
+5. **Use ALL extracted insights**
    - Themes (keywords that appear frequently)
    - Strengths (what's working based on positive emotions)
    - Weaknesses (what's broken based on negative emotions)
    - Crisis flags (urgent issues detected)
+   - **Pain point clusters (grouped themes)**
+   - **Root causes (underlying reasons)**
 
-4. **Be specific, never generic**
+6. **Be specific, never generic**
    ❌ BAD: "Improve user experience"
-   ✅ GOOD: "Fix the onboarding confusion mentioned by 6 customers who said 'I don't understand how to...' - this drives the 38% confusion emotion detected"
+   ✅ GOOD: "Fix the onboarding confusion (Cluster 2, 28% of feedback) caused by unclear pricing labels - address the root cause by adding tooltips explaining tier differences"
 
-5. **Support every claim with data**
-   - "Based on comment #3 and #7..."
-   - "The theme 'crashes' appears 8 times..."
-   - "Frustration emotion is at 42%, driven by..."
+7. **Support every claim with data**
+   - "Based on Cluster 1 (Pricing Concerns, 7 comments)..."
+   - "Root cause analysis shows this is caused by..."
+   - "Evidence: 'quote from comment'"
 
 ═══════════════════════════════════════════════════════════════
 📋 MANDATORY ANSWER FORMAT (USE FOR EVERY RESPONSE)
@@ -543,13 +608,15 @@ YOU MUST USE THIS CONTEXT IN EVERY SINGLE ANSWER.
 
 Structure EVERY response exactly like this:
 
-### 🔍 Insight Based on Your Customer Feedback
-[Short interpretation grounded in the actual comment data]
+### 🔬 Root Cause Insight
+[Identify the UNDERLYING cause behind the customer pattern - WHY do customers feel this way?]
+[Reference pain point clusters and root cause analysis]
 
 ### 🧠 Data Points Supporting This
 - Quote actual customer comments or reference specific patterns
-- Cite emotion percentages, themes, or frequencies
-- Reference strengths/weaknesses detected
+- Cite cluster names, sizes, and percentages
+- Reference root causes identified
+- Mention emotion percentages, themes, or frequencies
 
 ### 🎯 Recommendation / Answer
 [Specific, actionable steps that directly address issues in the customer comments]
@@ -978,9 +1045,68 @@ with page_container():
             st.session_state.analysis_insights = insights
             
             status_text.text("🚨 Detecting crisis keywords...")
-            progress_bar.progress(95)
+            progress_bar.progress(85)
             crisis_alerts = detect_crisis_keywords(csv_comments)
             st.session_state.crisis_alerts = crisis_alerts
+            
+            # NEW: Pain point clustering
+            if CLUSTERING_AVAILABLE and use_enhanced_ai:
+                status_text.text("🔍 Clustering pain points...")
+                progress_bar.progress(90)
+                
+                # Get emotions per comment for clustering
+                emotions_per_comment = []
+                for result in emotion_results.get('individual_results', []):
+                    emotions_per_comment.append(result.get('probabilities', {}))
+                
+                clustering_result = cluster_comments(
+                    comments=csv_comments,
+                    emotions_per_comment=emotions_per_comment,
+                    min_cluster_size=2,
+                    max_clusters=8
+                )
+                st.session_state.pain_point_clusters = clustering_result
+            else:
+                st.session_state.pain_point_clusters = None
+            
+            # NEW: Root cause analysis
+            if ROOT_CAUSE_AVAILABLE and use_enhanced_ai and st.session_state.pain_point_clusters:
+                status_text.text("🧠 Analyzing root causes...")
+                progress_bar.progress(95)
+                
+                try:
+                    root_cause_engine = get_root_cause_engine()
+                    if root_cause_engine and st.session_state.pain_point_clusters.get('clusters'):
+                        root_cause_result = root_cause_engine.infer_root_causes(
+                            clusters=st.session_state.pain_point_clusters['clusters'],
+                            emotions=emotion_results['aggregated_emotions'],
+                            themes=st.session_state.extracted_themes if st.session_state.extracted_themes else [],
+                            macro_summary=summary_results['macro_summary'],
+                            raw_comments=csv_comments
+                        )
+                        st.session_state.root_causes = root_cause_result
+                    else:
+                        st.session_state.root_causes = None
+                except Exception as e:
+                    print(f"Root cause analysis error: {e}")
+                    st.session_state.root_causes = None
+            else:
+                st.session_state.root_causes = None
+            
+            # Regenerate insights with clusters and root causes (if enhanced AI enabled)
+            if use_enhanced_ai and (st.session_state.pain_point_clusters or st.session_state.root_causes):
+                status_text.text("🔬 Regenerating insights with root cause analysis...")
+                insights_enhanced = run_rag_llm_analysis(
+                    summary=summary_results['macro_summary'],
+                    emotions=emotion_results['aggregated_emotions'],
+                    dominant_emotion=emotion_results['dominant_emotion'],
+                    original_text=" ".join(csv_comments[:50]),
+                    raw_comments=csv_comments,
+                    use_enhanced=True,
+                    pain_point_clusters=st.session_state.pain_point_clusters.get('clusters') if st.session_state.pain_point_clusters else None,
+                    root_causes=st.session_state.root_causes
+                )
+                st.session_state.analysis_insights = insights_enhanced
             
             progress_bar.progress(100)
             status_text.text("✅ Analysis complete!")

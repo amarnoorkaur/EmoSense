@@ -12,6 +12,8 @@ requests
 pandas
 chromadb
 sentence-transformers
+scikit-learn
+hdbscan
 langchain
 langchain-community
 tiktoken
