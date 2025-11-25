@@ -155,7 +155,7 @@ class LLMRecommendationService:
         prompt = f"""
 **Customer Feedback Analysis:**
 
-**Summary of Customer Comments:** {summary}
+**Summary of Comment Thread:** {summary}
 {category_section}
 
 **Emotional Analysis:**
@@ -166,26 +166,26 @@ class LLMRecommendationService:
 {research_section}
 
 **Your Task:**
-Analyze the customer feedback summary above and generate strategic business recommendations that DIRECTLY address the specific issues, complaints, praises, or requests mentioned in the comments.
+Analyze the comment thread summary above and generate strategic business recommendations that DIRECTLY address the specific issues, complaints, praises, or requests mentioned in the comment thread.
 
 **CRITICAL INSTRUCTIONS:**
-- Base ALL recommendations on ACTUAL content from the customer feedback summary
-- If customers mention specific problems (e.g., bugs, pricing, features), address THOSE specific issues
-- If customers praise specific aspects, recommend ways to amplify THOSE strengths
-- DO NOT suggest generic improvements unrelated to the actual feedback
-- Quote or reference specific themes from the customer comments
+- Base ALL recommendations on ACTUAL content from the comment thread
+- If commenters mention specific problems (e.g., bugs, pricing, features), address THOSE specific issues
+- If commenters praise specific aspects, recommend ways to amplify THOSE strengths
+- DO NOT suggest generic improvements unrelated to the actual comment thread
+- Quote or reference specific themes from the comment thread
 
 **Required Output Format:**
 
-1. **Key Insight** (What are customers actually saying? What specific patterns or themes emerge from their comments?)
+1. **Key Insight** (What are commenters actually saying? What specific patterns or themes emerge from their comments?)
 
-2. **Recommended Actions** (3-5 specific steps that directly address the issues or opportunities mentioned in the feedback)
-   - Each action should reference a specific customer concern or praise from the comments
+2. **Recommended Actions** (3-5 specific steps that directly address the issues or opportunities mentioned in the comment thread)
+   - Each action should reference a specific commenter concern or praise from the thread
    - Be actionable and specific, not generic
 
-3. **Expected Impact** (How will addressing these specific customer concerns improve your business?)
+3. **Expected Impact** (How will addressing these specific commenter concerns improve your business?)
 
-Be concise, professional, and laser-focused on the ACTUAL customer feedback content.
+Be concise, professional, and laser-focused on the ACTUAL comment thread content.
 """
         
         return prompt

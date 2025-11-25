@@ -3,7 +3,7 @@
 Full-featured business analytics with conversational AI
 
 Features:
-- Single text or CSV batch analysis
+- Single comment thread or CSV batch analysis
 - Emotion detection (BERT)
 - Summarization (BART)
 - RAG-powered insights
@@ -537,8 +537,8 @@ with page_container():
     spacer("md")
     
     input_method = st.radio(
-        "Choose input method:",
-        ["📝 Single Text", "📄 CSV Upload"],
+        "Choose Input Method:",
+        ["📝 Single Comment Thread", "📄 CSV Upload"],
         horizontal=True
     )
     
@@ -547,7 +547,7 @@ with page_container():
     text_input = None
     csv_comments = []
     
-    if input_method == "📝 Single Text":
+    if input_method == "📝 Single Comment Thread":
         text_input = st.text_area(
             "Enter customer feedback:",
             height=150,
