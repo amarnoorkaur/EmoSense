@@ -467,36 +467,6 @@ with page_container():
     
     spacer("lg")
     
-    # HOW IT WORKS - VISUAL PIPELINE
-    st.markdown('<h2 class="section-title">How It Works</h2>', unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="pipeline-container">
-        <div class="pipeline">
-            <div class="pipeline-step">
-                <h4>Emotion Detection</h4>
-            </div>
-            <div class="pipeline-step">
-                <h4>Summaries</h4>
-            </div>
-            <div class="pipeline-step">
-                <h4>Sentiment Analysis</h4>
-            </div>
-            <div class="pipeline-step">
-                <h4>RAG Insights</h4>
-            </div>
-            <div class="pipeline-step">
-                <h4>Recommendations</h4>
-            </div>
-            <div class="pipeline-step">
-                <h4>Crisis Detection</h4>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    spacer("lg")
-    
     # PRODUCT SCREENSHOTS CAROUSEL
     st.markdown('<h2 class="section-title">Product Showcase</h2>', unsafe_allow_html=True)
     
