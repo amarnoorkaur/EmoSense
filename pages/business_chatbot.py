@@ -1001,7 +1001,15 @@ with page_container():
         )
         
         if text_input:
-            csv_comments = [text_input]
+            # Split by newlines to handle multiple comments (one per line)
+            raw_lines = text_input.strip().split('\n')
+            # Filter out empty lines
+            csv_comments = [line.strip() for line in raw_lines if line.strip()]
+            
+            if len(csv_comments) > 1:
+                st.info(f"📊 Detected {len(csv_comments)} comments (one per line)")
+            else:
+                st.info(f"📊 Analyzing 1 comment")
     
     else:
         uploaded_file = st.file_uploader(
@@ -1438,22 +1446,8 @@ with page_container():
             </div>
             """, unsafe_allow_html=True)
             
-            st.markdown(f"""
-            <p style="color: #FFFFFF; line-height: 1.6; padding: 1rem;">
-                {vs['explanation']}
-            </p>
-            """, unsafe_allow_html=True)
-            
-            # Top Viral Comments
-            if vs.get('top_viral_comments'):
-                st.markdown("""
-                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-top: 1rem;">
-                    <h4 style="color: #FF6B35; margin-bottom: 0.5rem;">🌟 Top Viral-Signal Comments</h4>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                for i, comment in enumerate(vs['top_viral_comments'], 1):
-                    st.info(f"**{i}.** {comment}")
+            # Render explanation as markdown to properly display bold text
+            st.markdown(vs['explanation'])
             
             spacer("lg")
         
