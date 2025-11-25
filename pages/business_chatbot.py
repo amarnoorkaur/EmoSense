@@ -150,22 +150,56 @@ def run_bart_summary(text_list: List[str]) -> Dict[str, Any]:
     }
 
 
+def extract_themes_from_comments(comments: List[str]) -> List[str]:
+    """Extract key themes/keywords from comments using simple frequency analysis"""
+    from collections import Counter
+    import re
+    
+    # Common words to ignore
+    stop_words = {'the', 'is', 'it', 'and', 'to', 'a', 'of', 'for', 'in', 'on', 'this', 'that', 'with', 'are', 'was', 'be', 'have', 'has', 'but', 'not', 'can', 'my', 'i', 'you', 'your', 'me', 'so', 'very', 'just', 'will', 'at', 'from', 'they', 'we', 'or', 'an', 'as', 'by', 'been', 'all', 'would', 'there', 'their'}
+    
+    all_words = []
+    for comment in comments:
+        # Extract words (2+ chars, alphabetic)
+        words = re.findall(r'\b[a-z]{2,}\b', comment.lower())
+        all_words.extend([w for w in words if w not in stop_words])
+    
+    # Count frequency
+    word_counts = Counter(all_words)
+    
+    # Return top 15 most common
+    return [word for word, count in word_counts.most_common(15)]
+
+
 def run_rag_llm_analysis(
     summary: str, 
     emotions: Dict[str, float],
     dominant_emotion: str,
     original_text: str,
+    raw_comments: List[str] = None,
     use_enhanced: bool = False
 ) -> Dict[str, Any]:
     """Run RAG + LLM analysis for enhanced insights"""
     emotion_output = {"probabilities": emotions}
+    
+    # Extract themes from comments if available
+    top_themes = extract_themes_from_comments(raw_comments) if raw_comments else []
+    
+    # Detect crisis keywords
+    crisis_flags = []
+    if raw_comments:
+        crisis_alerts = detect_crisis_keywords(raw_comments)
+        crisis_flags = [alert['keyword'] for alert in crisis_alerts]
     
     result = combine_emotion_and_summary(
         emotion_output=emotion_output,
         summary=summary,
         original_text=original_text,
         use_enhanced_ai=use_enhanced,
-        category_context=None
+        category_context=None,
+        raw_comments=raw_comments,
+        top_themes=top_themes,
+        crisis_flags=crisis_flags
     )
     
     return result
@@ -647,6 +681,7 @@ with page_container():
                 emotions=emotion_results['aggregated_emotions'],
                 dominant_emotion=emotion_results['dominant_emotion'],
                 original_text=" ".join(csv_comments[:50]),
+                raw_comments=csv_comments,  # Pass raw comments
                 use_enhanced=use_enhanced_ai and RAG_AVAILABLE
             )
             st.session_state.analysis_insights = insights

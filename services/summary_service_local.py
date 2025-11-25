@@ -4,7 +4,7 @@ This version loads the model locally instead of using the deprecated API
 """
 import re
 from functools import lru_cache
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import streamlit as st
 
 try:
@@ -107,7 +107,10 @@ def combine_emotion_and_summary(emotion_output: Dict[str, Any],
                                summary: str, 
                                original_text: str,
                                use_enhanced_ai: bool = False,
-                               category_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                               category_context: Optional[Dict[str, Any]] = None,
+                               raw_comments: Optional[List[str]] = None,
+                               top_themes: Optional[List[str]] = None,
+                               crisis_flags: Optional[List[str]] = None) -> Dict[str, Any]:
     """
     Combine emotion analysis with summary to create intelligent output
     
@@ -117,6 +120,9 @@ def combine_emotion_and_summary(emotion_output: Dict[str, Any],
         original_text: Original input text for context
         use_enhanced_ai: Whether to use LLM-powered recommendations (default: False)
         category_context: Optional category detection results for context-aware insights
+        raw_comments: List of actual customer comments (NEW)
+        top_themes: Extracted keywords/themes from comments (NEW)
+        crisis_flags: Crisis keywords detected (NEW)
         
     Returns:
         Structured dictionary with combined insights
@@ -162,7 +168,10 @@ def combine_emotion_and_summary(emotion_output: Dict[str, Any],
                     all_emotions=all_emotions,
                     confidence=all_emotions.get(dominant_emotion, 0.0),
                     research_context=research_context,
-                    category_context=category_context
+                    category_context=category_context,
+                    raw_comments=raw_comments,
+                    top_themes=top_themes,
+                    crisis_flags=crisis_flags
                 )
                 
                 suggested_action = llm_result.get("recommendation", "")
