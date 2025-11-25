@@ -1262,11 +1262,8 @@ with page_container():
             <h4 style="color: #C06CFF; margin-bottom: 0.5rem;">🎯 Recommended Actions</h4>
         </div>
         """, unsafe_allow_html=True)
-        st.markdown(f"""
-        <p style="color: #FFFFFF; line-height: 1.6; padding: 1rem;">
-            {insights.get('suggested_action', 'No suggestions available')}
-        </p>
-        """, unsafe_allow_html=True)
+        
+        st.markdown(insights.get('suggested_action', 'No suggestions available'))
         
         spacer("lg")
         
