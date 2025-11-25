@@ -1,0 +1,24 @@
+[[pages]]
+path = "app.py"
+name = "Home"
+icon = "🏠"
+
+[[pages]]
+path = "pages/About.py"
+name = "About"
+icon = "ℹ️"
+
+[[pages]]
+path = "pages/Business_Chatbot.py"
+name = "Business Chatbot"
+icon = "🤝"
+
+[[pages]]
+path = "pages/Personal_Chatbot.py"
+name = "Personal Chatbot"
+icon = "💛"
+
+[[pages]]
+path = "pages/Terms_and_Conditions.py"
+name = "Terms and Conditions"
+icon = "📜"

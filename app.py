@@ -7,8 +7,13 @@ import streamlit as st
 from components.layout import set_page_config, inject_global_styles, page_container, spacer
 from components.footer import render_footer
 
-# Configure page
-set_page_config()
+# Configure page with custom title
+st.set_page_config(
+    page_title="Home - EmoSense AI",
+    page_icon="🏠",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 inject_global_styles()
 
 # Custom CSS for premium landing page
