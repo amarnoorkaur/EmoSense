@@ -101,7 +101,7 @@ def render_header():
     }
     
     .main-content-with-header {
-        margin-top: 80px;
+        margin-top: 60px;
     }
     </style>
     
@@ -112,7 +112,7 @@ def render_header():
                 <span class="header-logo-text">EmoSense AI</span>
             </div>
             <div class="header-nav">
-                <a href="/app" class="header-nav-link">Home</a>
+                <a href="/" class="header-nav-link">Home</a>
                 <a href="/about" class="header-nav-link">About</a>
                 <a href="/business_chatbot" class="header-nav-link">Business Chatbot</a>
                 <a href="/personal_chatbot" class="header-nav-link">Personal Chatbot</a>

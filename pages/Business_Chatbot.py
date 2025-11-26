@@ -1017,8 +1017,7 @@ with page_container():
         )
         
         if text_input:
-            raw_lines = text_input.strip().split('
-')
+            raw_lines = text_input.strip().split('\n')
             csv_comments = [line.strip() for line in raw_lines if line.strip()]
             if len(csv_comments) > 1:
                 st.info(f"Detected {len(csv_comments)} comments (one per line)")

@@ -36,7 +36,7 @@ with page_container():
         secondary_cta=("Try Personal Chatbot", "/personal_chatbot")
     )
 
-    spacer("lg")
+    spacer("sm")
 
     col1, col2 = st.columns([1.05, 0.95])
     with col1:
