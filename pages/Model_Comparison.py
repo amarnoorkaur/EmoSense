@@ -167,20 +167,6 @@ with page_container():
                 """, unsafe_allow_html=True)
                 
                 spacer("md")
-                
-                # Accuracy/Performance Note
-                st.markdown("""
-                <div class="glass-card" style="padding: 20px; background: rgba(255, 184, 77, 0.1); border: 1px solid rgba(255, 184, 77, 0.3);">
-                    <p style="color: #FFB84D; margin: 0; font-size: 0.9rem;">
-                        <strong>📊 Model Performance Note:</strong> Individual predictions don't show overall accuracy. 
-                        For comprehensive performance metrics (Precision, Recall, F1-Score), both models need to be 
-                        evaluated on a labeled test dataset. The agreement percentage above shows how consistently 
-                        both models predict on this specific input.
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                spacer("md")
             
             # Side-by-side comparison
             col_bert, col_logreg = st.columns(2)
