@@ -21,35 +21,74 @@ class LogRegEmotionService:
         try:
             models_dir = Path(__file__).parent.parent / "models"
             
-            # Try loading with different encoding
+            # Suppress warnings
             import warnings
-            warnings.filterwarnings('ignore', category=UserWarning)
+            warnings.filterwarnings('ignore')
             
-            # Load labels first (smallest file)
-            print(f"Loading labels from: {models_dir / 'emotion_labels.pkl'}")
-            with open(models_dir / "emotion_labels.pkl", "rb") as f:
-                self.labels = pickle.load(f, encoding='latin1')
-            print(f"✅ Labels loaded: {len(self.labels)} emotions")
+            # Try different loading strategies
+            print(f"Attempting to load LogReg models from: {models_dir}")
+            
+            # Strategy 1: Standard pickle load
+            try:
+                with open(models_dir / "emotion_labels.pkl", "rb") as f:
+                    self.labels = pickle.load(f)
+                print(f"✅ Labels loaded: {len(self.labels) if self.labels else 0} emotions")
+            except Exception as e:
+                print(f"Strategy 1 failed for labels: {e}")
+                # Strategy 2: Try with encoding
+                try:
+                    with open(models_dir / "emotion_labels.pkl", "rb") as f:
+                        self.labels = pickle.load(f, encoding='latin1')
+                    print(f"✅ Labels loaded with latin1 encoding")
+                except Exception as e2:
+                    print(f"Strategy 2 failed for labels: {e2}")
+                    raise
             
             # Load vectorizer
-            print(f"Loading vectorizer from: {models_dir / 'tfidf_vectorizer.pkl'}")
-            with open(models_dir / "tfidf_vectorizer.pkl", "rb") as f:
-                self.vectorizer = pickle.load(f, encoding='latin1')
-            print(f"✅ Vectorizer loaded")
+            try:
+                with open(models_dir / "tfidf_vectorizer.pkl", "rb") as f:
+                    self.vectorizer = pickle.load(f)
+                print(f"✅ Vectorizer loaded")
+            except Exception as e:
+                try:
+                    with open(models_dir / "tfidf_vectorizer.pkl", "rb") as f:
+                        self.vectorizer = pickle.load(f, encoding='latin1')
+                    print(f"✅ Vectorizer loaded with latin1 encoding")
+                except Exception as e2:
+                    print(f"Failed to load vectorizer: {e2}")
+                    raise
             
             # Load model
-            print(f"Loading model from: {models_dir / 'emotion_model.pkl'}")
-            with open(models_dir / "emotion_model.pkl", "rb") as f:
-                self.model = pickle.load(f, encoding='latin1')
-            print(f"✅ Model loaded")
+            try:
+                with open(models_dir / "emotion_model.pkl", "rb") as f:
+                    self.model = pickle.load(f)
+                print(f"✅ Model loaded")
+            except Exception as e:
+                try:
+                    with open(models_dir / "tfidf_vectorizer.pkl", "rb") as f:
+                        import joblib
+                        self.model = joblib.load(f)
+                    print(f"✅ Model loaded with joblib")
+                except:
+                    try:
+                        with open(models_dir / "emotion_model.pkl", "rb") as f:
+                            self.model = pickle.load(f, encoding='latin1')
+                        print(f"✅ Model loaded with latin1 encoding")
+                    except Exception as e3:
+                        print(f"Failed to load model: {e3}")
+                        raise
             
-            print(f"✅ LogReg model loaded successfully with {len(self.labels)} emotion labels")
+            print(f"✅ All LogReg components loaded successfully")
             
         except Exception as e:
             import traceback
             print(f"❌ Error loading LogReg model: {e}")
-            print(f"Full traceback:")
+            print(f"Full error details:")
             traceback.print_exc()
+            print(f"\n⚠️ Please ensure the pickle files were saved with:")
+            print(f"   - pickle.dump() or joblib.dump()")
+            print(f"   - Compatible Python version (3.8+)")
+            print(f"   - Compatible scikit-learn version")
             self.model = None
             self.vectorizer = None
             self.labels = None
