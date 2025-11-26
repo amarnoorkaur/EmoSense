@@ -1348,6 +1348,7 @@ with page_container():
             st.progress(sentiments['neutral'])
         
         spacer("lg")
+        spacer("md")
         
         # Insights with Download Button
         col1, col2 = st.columns([3, 1])
