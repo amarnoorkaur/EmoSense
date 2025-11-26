@@ -37,6 +37,9 @@ if "show_emotion_analysis" not in st.session_state:
 if "last_emotion_data" not in st.session_state:
     st.session_state.last_emotion_data = None
 
+if "clear_input" not in st.session_state:
+    st.session_state.clear_input = False
+
 # Custom CSS for chat interface
 st.markdown("""
 <style>
@@ -418,13 +421,21 @@ with page_container():
     col_input, col_buttons = st.columns([4, 1])
     
     with col_input:
+        # Clear input after message is sent
+        default_value = "" if st.session_state.clear_input else st.session_state.get("user_message_input", "")
+        
         user_input = st.text_area(
             "Message",
+            value=default_value,
             height=100,
             placeholder="Just type naturally... I'm here to listen. 💜",
             label_visibility="collapsed",
             key="user_message_input"
         )
+        
+        # Reset the clear flag
+        if st.session_state.clear_input:
+            st.session_state.clear_input = False
     
     with col_buttons:
         st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
@@ -482,18 +493,22 @@ with page_container():
                     })
                     st.session_state.emotion_history = st.session_state.emotion_history[-10:]
                     
+                    # Clear input box
+                    st.session_state.clear_input = True
                     st.rerun()
         
         if st.button("🗑️ Clear", use_container_width=True):
             st.session_state.chat_history = []
             st.session_state.emotion_history = []
             st.session_state.last_emotion_data = None
+            st.session_state.clear_input = True
             st.rerun()
     
     # Handle send button
     if send_button and user_input.strip():
         with st.spinner("💭 Thinking..."):
             handle_user_message(user_input)
+        st.session_state.clear_input = True
         st.rerun()
     
     spacer("md")
