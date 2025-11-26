@@ -966,6 +966,7 @@ def render_chat_interface():
 render_header()
 
 with page_container():
+    st.markdown('<div class="main-content-with-header">', unsafe_allow_html=True)
     st.markdown('<div class="page-wrapper">', unsafe_allow_html=True)
     
     page_header(
