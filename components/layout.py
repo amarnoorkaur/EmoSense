@@ -101,7 +101,7 @@ def render_header():
     }
     
     .main-content-with-header {
-        margin-top: 60px;
+        margin-top: 40px;
     }
     </style>
     
