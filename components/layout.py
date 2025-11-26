@@ -392,24 +392,9 @@ def page_container():
     inject_global_styles()
     return st.container()
 
-
-
-def render_header(active_page: str = "home"):
-    """Render top navigation header with active state highlighting"""
-    nav_items = [
-        {"key": "home", "label": "Home", "href": "/app"},
-        {"key": "business", "label": "Business Chatbot", "href": "/business_chatbot"},
-        {"key": "personal", "label": "Personal Chatbot", "href": "/personal_chatbot"},
-        {"key": "about", "label": "About", "href": "/about"},
-    ]
-
-    nav_links = []
-    for item in nav_items:
-        active_class = " active" if item["key"] == active_page else ""
-        nav_links.append(f'<a href="{item["href"]}" class="header-nav-link{active_class}">{item["label"]}</a>')
-    nav_links_html = "".join(nav_links)
-
-    header_html = """
+def render_header():
+    """Render top navigation header"""
+    st.markdown("""
     <style>
     .header-container {
         position: fixed;
@@ -487,13 +472,17 @@ def render_header(active_page: str = "home"):
                 <span class="header-logo-icon">dYZ-</span>
                 <span class="header-logo-text">EmoSense AI</span>
             </div>
-            <div class="header-nav">{NAV_LINKS}</div>
+            <div class="header-nav">
+                <a href="/app" class="header-nav-link">dY?� Home</a>
+                <a href="/about" class="header-nav-link">�,1�,? About</a>
+                <a href="/business_chatbot" class="header-nav-link active">dY? Business Buddy</a>
+                <a href="/personal_chatbot" class="header-nav-link">dY'- Personal Chat</a>
+                <a href="/Terms_and_Conditions" class="header-nav-link">dY"o Terms</a>
+            </div>
         </div>
     </div>
     <div class="main-content-with-header"></div>
-    """
-
-    st.markdown(header_html.replace('{NAV_LINKS}', nav_links_html), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 
 def gradient_hero(title: str, subtitle: str):

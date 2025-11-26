@@ -5,7 +5,7 @@ Continuous, context-aware, emotionally intelligent conversational agent
 import streamlit as st
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
-from components.layout import set_page_config, inject_global_styles, page_container, gradient_hero, emotion_chip, spacer, render_header
+from components.layout import set_page_config, inject_global_styles, page_container, gradient_hero, emotion_chip, spacer
 from components.footer import render_footer
 from services.personal_llm_service import get_personal_llm_service
 import datetime
@@ -14,7 +14,6 @@ from typing import Optional, Dict, List
 # Configure page
 set_page_config()
 inject_global_styles()
-render_header(active_page="personal")
 
 # Initialize LLM service
 llm_service = get_personal_llm_service()
