@@ -33,8 +33,7 @@ from components.layout import (
     gradient_hero,
     page_header,
     card,
-    spacer,
-    render_header
+    spacer
 )
 from components.footer import render_footer
 
@@ -88,6 +87,21 @@ from openai import OpenAI
 set_page_config()
 inject_global_styles()
 
+# Add consistent spacing CSS
+st.markdown("""
+<style>
+/* Remove top spacing for consistency */
+.page-wrapper {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+.gradient-hero {
+    margin-top: 0 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ============================================================================
 # SESSION STATE INITIALIZATION
 # ============================================================================
@@ -113,7 +127,10 @@ def init_session_state():
         "pain_point_clusters": None,
         "root_causes": None,
         # New: Viral signal analysis
-        "viral_signals": None
+        "viral_signals": None,
+        # Chat input clearing
+        "business_question_input": "",
+        "clear_business_input": False,
     }
     
     for key, value in defaults.items():
@@ -926,10 +943,15 @@ def render_chat_interface():
     col1, col2 = st.columns([4, 1])
     
     with col1:
+        if st.session_state.clear_business_input:
+            st.session_state.business_question_input = ""
+            st.session_state.clear_business_input = False
+        
         user_question = st.text_input(
             "Ask Business Buddy:",
+            value=st.session_state.business_question_input,
             placeholder="e.g., What are the biggest issues? How can I reduce churn? What do customers love most?",
-            key="buddy_question",
+            key="buddy_question_input_box",
             label_visibility="collapsed"
         )
     
@@ -937,13 +959,19 @@ def render_chat_interface():
         send_button = st.button("💬 Send", type="primary", use_container_width=True)
     
     if send_button and user_question.strip():
+        # Store the question before clearing
+        question_to_send = user_question
+        # Clear input immediately
+        st.session_state.business_question_input = ""
+        st.session_state.clear_business_input = True
+        
         st.session_state.business_chat_history.append({
             "role": "user",
-            "content": user_question
+            "content": question_to_send
         })
         
         with st.spinner("🤔 Business Buddy is thinking..."):
-            response = handle_business_chat_query(user_question)
+            response = handle_business_chat_query(question_to_send)
         
         st.session_state.business_chat_history.append({
             "role": "assistant",
@@ -962,11 +990,7 @@ def render_chat_interface():
 # MAIN APP
 # ============================================================================
 
-# Render header at the top
-render_header()
-
 with page_container():
-    st.markdown('<div class="main-content-with-header">', unsafe_allow_html=True)
     st.markdown('<div class="page-wrapper">', unsafe_allow_html=True)
     
     page_header(

@@ -389,20 +389,21 @@ with page_container():
     
     with col_input:
         # Clear input after message is sent
-        default_value = "" if st.session_state.clear_input else st.session_state.get("user_message_input", "")
+        if "user_message_input" not in st.session_state:
+            st.session_state.user_message_input = ""
+        
+        if st.session_state.clear_input:
+            st.session_state.user_message_input = ""
+            st.session_state.clear_input = False
         
         user_input = st.text_area(
             "Message",
-            value=default_value,
+            value=st.session_state.user_message_input,
             height=100,
             placeholder="Just type naturally... I'm here to listen. 💜",
             label_visibility="collapsed",
-            key="user_message_input"
+            key="personal_chat_input_box"
         )
-        
-        # Reset the clear flag
-        if st.session_state.clear_input:
-            st.session_state.clear_input = False
     
     with col_buttons:
         st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
@@ -473,9 +474,14 @@ with page_container():
     
     # Handle send button
     if send_button and user_input.strip():
-        with st.spinner("💭 Thinking..."):
-            handle_user_message(user_input)
+        # Store the input before clearing
+        message_to_send = user_input
+        # Clear the input immediately
+        st.session_state.user_message_input = ""
         st.session_state.clear_input = True
+        
+        with st.spinner("💭 Thinking..."):
+            handle_user_message(message_to_send)
         st.rerun()
     
     spacer("md")
