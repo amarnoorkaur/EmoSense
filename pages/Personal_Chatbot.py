@@ -44,6 +44,20 @@ if "clear_input" not in st.session_state:
 # Custom CSS for chat interface
 st.markdown("""
 <style>
+/* Remove top spacing */
+.page-wrapper {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+.gradient-hero {
+    margin-top: 0 !important;
+}
+
+.header-container {
+    margin-bottom: 0 !important;
+}
+
 /* Chat container */
 .chat-container {
     max-height: 500px;
@@ -321,8 +335,6 @@ with page_container():
         "💜 EmoSense Companion",
         "Your emotionally intelligent AI friend. Just chat naturally — I'll understand."
     )
-    
-    spacer("md")
     
     # Settings row
     col_settings1, col_settings2, col_settings3 = st.columns([2, 2, 1])
