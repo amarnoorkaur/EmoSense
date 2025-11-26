@@ -21,22 +21,35 @@ class LogRegEmotionService:
         try:
             models_dir = Path(__file__).parent.parent / "models"
             
-            # Load model
-            with open(models_dir / "emotion_model.pkl", "rb") as f:
-                self.model = pickle.load(f)
+            # Try loading with different encoding
+            import warnings
+            warnings.filterwarnings('ignore', category=UserWarning)
+            
+            # Load labels first (smallest file)
+            print(f"Loading labels from: {models_dir / 'emotion_labels.pkl'}")
+            with open(models_dir / "emotion_labels.pkl", "rb") as f:
+                self.labels = pickle.load(f, encoding='latin1')
+            print(f"✅ Labels loaded: {len(self.labels)} emotions")
             
             # Load vectorizer
+            print(f"Loading vectorizer from: {models_dir / 'tfidf_vectorizer.pkl'}")
             with open(models_dir / "tfidf_vectorizer.pkl", "rb") as f:
-                self.vectorizer = pickle.load(f)
+                self.vectorizer = pickle.load(f, encoding='latin1')
+            print(f"✅ Vectorizer loaded")
             
-            # Load labels
-            with open(models_dir / "emotion_labels.pkl", "rb") as f:
-                self.labels = pickle.load(f)
+            # Load model
+            print(f"Loading model from: {models_dir / 'emotion_model.pkl'}")
+            with open(models_dir / "emotion_model.pkl", "rb") as f:
+                self.model = pickle.load(f, encoding='latin1')
+            print(f"✅ Model loaded")
             
             print(f"✅ LogReg model loaded successfully with {len(self.labels)} emotion labels")
             
         except Exception as e:
+            import traceback
             print(f"❌ Error loading LogReg model: {e}")
+            print(f"Full traceback:")
+            traceback.print_exc()
             self.model = None
             self.vectorizer = None
             self.labels = None
@@ -50,7 +63,7 @@ class LogRegEmotionService:
             threshold: Minimum probability threshold for emotion detection
             
         Returns:
-            Tuple of (detected_emotions, all_probabilities)
+            Tuple of (detected_emotions, all_probabilities_dict)
         """
         if not self.model or not self.vectorizer or not self.labels:
             return [], {}
@@ -101,6 +114,17 @@ class LogRegEmotionService:
     def is_available(self) -> bool:
         """Check if the model is loaded and available"""
         return self.model is not None and self.vectorizer is not None and self.labels is not None
+    
+    def get_model_info(self) -> Dict[str, str]:
+        """Get model information for display"""
+        return {
+            "type": "Logistic Regression (TF-IDF)",
+            "features": "Term Frequency-Inverse Document Frequency",
+            "algorithm": "One-vs-Rest Multi-label Classification",
+            "training": "Trained on labeled emotion dataset",
+            "strengths": "Fast inference, interpretable, lightweight",
+            "accuracy_note": "Accuracy is calculated as exact match ratio (all emotions must match)"
+        }
 
 
 # Singleton instance
