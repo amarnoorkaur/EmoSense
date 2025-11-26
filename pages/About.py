@@ -33,14 +33,26 @@ with page_container():
         To make emotional intelligence accessible through AI, enabling better self-awareness, 
         deeper customer insights, and more empathetic communication.
         
-        ### ✨ Key Features
+        ### ✨ Personal Companion Features
         
-        - **28 Emotion Detection** - Fine-grained emotion analysis powered by BERT
-        - **Smart Summarization** - Condense long feedback using BART/PEGASUS
-        - **Category Detection** - Automatically classify content into 9 categories
-        - **AI-Powered Insights** - Get actionable recommendations via GPT-4
+        - **5 Unique Personalities** - Choose from Friendly, Calm, Big Sister, Funny, or Deep Thinker
+        - **5 Conversation Modes** - Casual Chat, Comfort Me, Help Me Reflect, Hype Me Up, Just Listen
+        - **Continuous Conversations** - Chat naturally with memory of past exchanges
+        - **Emotional Trend Analysis** - Track your emotional patterns over time
+        - **Crisis Detection** - Immediate support with grounding techniques when needed
+        - **28 Emotion Analysis** - Fine-grained emotion detection powered by BERT
+        - **Selective Analysis** - Emotion analysis when you need it, not on every message
+        
+        ### 💼 Business Buddy Features
+        
+        - **Virality Predictor** - Detect viral potential with 6 emotional signals
+        - **Crisis Radar** - Spot urgent issues before they escalate
+        - **Root Cause Analysis** - Uncover the "why" behind sentiment patterns
+        - **Smart Summaries** - Condense thousands of comments instantly
+        - **Sentiment Dashboard** - Real-time emotion breakdown with charts
+        - **Category Classifier** - Auto-sort feedback into 9 business categories
         - **Bulk Analysis** - Process thousands of comments at scale
-        - **RAG Integration** - Context-aware suggestions from market research
+        - **AI-Powered Insights** - Get actionable recommendations via GPT-4
         """, unsafe_allow_html=True)
     
     section_card("🧠 What is EmoSense?", "🎭", card1_content)
@@ -87,80 +99,8 @@ with page_container():
     
     spacer("md")
     
-    # Card 3: How the Technology Works
+    # Card 3: Built by Amarnoor Kaur
     def card3_content():
-        st.markdown("""
-        EmoSense combines cutting-edge NLP models in a powerful AI pipeline:
-        
-        ### 🤖 BERT Emotion Detection
-        
-        **Model:** `j-hartmann/emotion-english-distilroberta-base`  
-        **Trained on:** 28 fine-grained emotion labels  
-        **Capability:** Detects joy, sadness, anger, fear, love, surprise, and 22+ nuanced emotions
-        
-        Our emotion detection uses a transformer-based model fine-tuned specifically for emotional 
-        classification. It analyzes text at a deep semantic level, understanding context and subtle 
-        emotional cues.
-        
-        ### 📝 BART/PEGASUS Summarization
-        
-        **Models:** `facebook/bart-large-cnn`, `google/pegasus-xsum`  
-        **Purpose:** Condense long text while preserving emotional essence  
-        **Use Case:** Summarize hundreds of comments into actionable insights
-        
-        Summarization helps businesses process large volumes of feedback efficiently, extracting 
-        the core emotional narrative without losing critical details.
-        
-        ### 🎯 BART-MNLI Category Detection
-        
-        **Model:** `facebook/bart-large-mnli`  
-        **Categories:** Product Reviews, Customer Support, Social Media, Marketing, HR, etc.  
-        **Accuracy:** Zero-shot classification with high confidence
-        
-        Category detection routes feedback to appropriate teams and enables category-specific 
-        emotional analysis.
-        
-        ### 🧠 GPT-4 + RAG Recommendations
-        
-        **Model:** `gpt-4o-mini` via OpenAI API  
-        **Enhanced with:** ChromaDB vector database containing market research  
-        **Output:** Context-aware, actionable recommendations tailored to your industry
-        
-        Our RAG (Retrieval-Augmented Generation) system queries a proprietary knowledge base of 
-        emotional intelligence best practices, delivering personalized strategies for improvement.
-        
-        ### 🔗 Integration Architecture
-        
-        ```
-        User Input
-            ↓
-        [BERT] → Emotion Detection → 28 emotion probabilities
-            ↓
-        [BART-MNLI] → Category Classification → Content type
-            ↓
-        [BART/PEGASUS] → Summarization → Condensed insights
-            ↓
-        [ChromaDB] → Knowledge Retrieval → Relevant research
-            ↓
-        [GPT-4] → Recommendation Generation → Actionable strategies
-            ↓
-        Beautiful Dashboard
-        ```
-        
-        ### 🔒 Privacy & Security
-        
-        - **No data storage**: Your input is processed in real-time and not saved
-        - **Local models**: BERT and BART run on our secure infrastructure
-        - **API encryption**: All API calls use HTTPS with key authentication
-        - **Optional AI**: Enhanced features (GPT-4) are opt-in
-        """, unsafe_allow_html=True)
-    
-    section_card("🛠️ How the Technology Works", "⚙️", card3_content)
-    
-    spacer("md")
-    
-    # Card 4: Built by Amarnoor Kaur
-    def card4_content():
         st.markdown("""
         EmoSense AI was created by **Amarnoor Kaur**, a passionate AI engineer and emotional 
         intelligence advocate.
@@ -194,7 +134,7 @@ with page_container():
         technology can be a force for emotional well-being. 💛
         """, unsafe_allow_html=True)
     
-    section_card("🖤 Built with Purpose", "💝", card4_content)
+    section_card("🖤 Built with Purpose", "💝", card3_content)
     
     spacer("lg")
     st.markdown('</div>', unsafe_allow_html=True)

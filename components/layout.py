@@ -36,15 +36,11 @@ def render_header():
     st.markdown("""
     <style>
     .header-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
         background: rgba(17, 24, 39, 0.95);
         backdrop-filter: blur(10px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding: 1rem 2rem;
+        margin-bottom: 30px;
     }
     
     .header-content {
@@ -100,9 +96,6 @@ def render_header():
         color: #667EEA;
     }
     
-    .main-content-with-header {
-        margin-top: 40px;
-    }
     </style>
     
     <div class="header-container">
