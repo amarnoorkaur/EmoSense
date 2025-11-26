@@ -1,214 +1,513 @@
 """
 Personal Emotion Companion - EmoSense AI
-Warm, cozy, emotional interface with chat bubbles and emotion chips
+Continuous, context-aware, emotionally intelligent conversational agent
 """
 import streamlit as st
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
 from components.layout import set_page_config, inject_global_styles, page_container, gradient_hero, emotion_chip, spacer
 from components.footer import render_footer
+from services.personal_llm_service import get_personal_llm_service
 import datetime
+from typing import Optional, Dict, List
 
 # Configure page
 set_page_config()
 inject_global_styles()
 
-# Initialize session state
-if "personal_history" not in st.session_state:
-    st.session_state.personal_history = []
+# Initialize LLM service
+llm_service = get_personal_llm_service()
 
-# Main container
+# Initialize session state for conversation memory
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []  # Last 10 messages
+
+if "emotion_history" not in st.session_state:
+    st.session_state.emotion_history = []  # Emotion analyses over time
+
+if "conversation_mode" not in st.session_state:
+    st.session_state.conversation_mode = "Casual Chat"
+
+if "bot_personality" not in st.session_state:
+    st.session_state.bot_personality = "Friendly"
+
+if "show_emotion_analysis" not in st.session_state:
+    st.session_state.show_emotion_analysis = False
+
+if "last_emotion_data" not in st.session_state:
+    st.session_state.last_emotion_data = None
+
+# Custom CSS for chat interface
+st.markdown("""
+<style>
+/* Chat container */
+.chat-container {
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: rgba(17, 24, 39, 0.3);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+}
+
+/* User message (right side) */
+.message-user-chat {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.875rem 1.25rem;
+    border-radius: 18px 18px 4px 18px;
+    margin: 0.5rem 0 0.5rem auto;
+    max-width: 75%;
+    width: fit-content;
+    float: right;
+    clear: both;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    animation: slideInRight 0.3s ease-out;
+}
+
+/* Bot message (left side) */
+.message-bot-chat {
+    background: rgba(138, 92, 246, 0.15);
+    border: 1px solid rgba(138, 92, 246, 0.3);
+    color: #E5E7EB;
+    padding: 0.875rem 1.25rem;
+    border-radius: 18px 18px 18px 4px;
+    margin: 0.5rem auto 0.5rem 0;
+    max-width: 75%;
+    width: fit-content;
+    float: left;
+    clear: both;
+    animation: slideInLeft 0.3s ease-out;
+}
+
+/* Emotion chips in chat */
+.emotion-chip-inline {
+    display: inline-block;
+    background: rgba(138, 92, 246, 0.2);
+    border: 1px solid rgba(138, 92, 246, 0.4);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin: 0.25rem;
+    color: #C4B5FD;
+}
+
+/* Timestamp */
+.timestamp {
+    font-size: 0.7rem;
+    color: #9CA3AF;
+    margin: 0.25rem 0 1rem 0;
+    clear: both;
+}
+
+.timestamp-user {
+    text-align: right;
+}
+
+.timestamp-bot {
+    text-align: left;
+}
+
+/* Input area styling */
+.stTextArea textarea {
+    background: rgba(17, 24, 39, 0.6) !important;
+    border: 1px solid rgba(138, 92, 246, 0.3) !important;
+    color: white !important;
+    border-radius: 12px !important;
+}
+
+/* Mode badges */
+.mode-badge {
+    display: inline-block;
+    background: rgba(138, 92, 246, 0.2);
+    border: 1px solid rgba(138, 92, 246, 0.4);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    color: #C4B5FD;
+    margin-right: 0.5rem;
+}
+
+/* Animations */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Scrollbar styling */
+.chat-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+    background: rgba(17, 24, 39, 0.3);
+    border-radius: 10px;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+    background: rgba(138, 92, 246, 0.5);
+    border-radius: 10px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(138, 92, 246, 0.7);
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+def render_chat_history():
+    """Render the conversation history as chat bubbles"""
+    if not st.session_state.chat_history:
+        st.markdown("""
+        <div style="text-align: center; padding: 3rem; color: #9CA3AF;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+            <h3 style="color: #E5E7EB;">Start a conversation</h3>
+            <p style="margin-top: 0.5rem;">Just type something below and I'll respond naturally.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        return
+    
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    
+    # Render messages in order (oldest to newest)
+    for i, msg in enumerate(st.session_state.chat_history):
+        role = msg["role"]
+        content = msg["content"]
+        timestamp = msg.get("timestamp", "")
+        
+        if role == "user":
+            # User message
+            st.markdown(f"""
+            <div class="message-user-chat">{content}</div>
+            <div class="timestamp timestamp-user">{timestamp}</div>
+            """, unsafe_allow_html=True)
+            
+            # Show emotion chips if this message had analysis
+            emotion_data = msg.get("emotion_data")
+            if emotion_data and st.session_state.show_emotion_analysis:
+                emotions = emotion_data.get("emotions", [])
+                probs = emotion_data.get("probabilities", {})
+                if emotions:
+                    chips_html = " ".join([
+                        f'<span class="emotion-chip-inline">{EMOJI_MAP.get(e, "🎭")} {e.capitalize()} {probs[e]:.0%}</span>'
+                        for e in emotions[:3]
+                    ])
+                    st.markdown(f'<div style="text-align: right; margin-top: -0.75rem; margin-bottom: 1rem;">{chips_html}</div>', unsafe_allow_html=True)
+        
+        else:  # assistant
+            # Bot message
+            st.markdown(f"""
+            <div class="message-bot-chat">{content}</div>
+            <div class="timestamp timestamp-bot">{timestamp}</div>
+            """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Auto-scroll to bottom using JavaScript
+    st.markdown("""
+    <script>
+        const chatContainer = document.querySelector('.chat-container');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+    """, unsafe_allow_html=True)
+
+
+def should_analyze_emotions(user_message: str, mode: str) -> bool:
+    """
+    Determine if emotion analysis should run
+    Only runs when:
+    - User is in "Help Me Reflect" mode
+    - Distress keywords are detected
+    - User explicitly requests analysis
+    """
+    if mode == "Help Me Reflect":
+        return True
+    
+    if llm_service and llm_service.detect_distress(user_message):
+        return True
+    
+    # Check for explicit analysis requests
+    message_lower = user_message.lower()
+    analysis_triggers = ["how am i feeling", "what emotions", "analyze", "what's my mood"]
+    if any(trigger in message_lower for trigger in analysis_triggers):
+        return True
+    
+    return False
+
+
+def handle_user_message(user_message: str):
+    """Process user message and generate response"""
+    
+    if not user_message.strip():
+        return
+    
+    # Get current settings
+    mode = st.session_state.conversation_mode
+    personality = st.session_state.bot_personality
+    
+    # Check for crisis situation first
+    if llm_service and llm_service.is_crisis_situation(user_message):
+        # Immediate grounding response
+        crisis_response = llm_service.get_crisis_response()
+        
+        # Add to chat history
+        timestamp = datetime.datetime.now().strftime("%I:%M %p")
+        st.session_state.chat_history.append({
+            "role": "user",
+            "content": user_message,
+            "timestamp": timestamp
+        })
+        st.session_state.chat_history.append({
+            "role": "assistant",
+            "content": crisis_response,
+            "timestamp": timestamp
+        })
+        
+        # Keep last 10 conversations
+        st.session_state.chat_history = st.session_state.chat_history[-20:]
+        
+        return
+    
+    # Determine if emotion analysis needed
+    run_emotion_analysis = should_analyze_emotions(user_message, mode)
+    
+    emotion_context = None
+    if run_emotion_analysis:
+        # Run BERT emotion detection
+        predicted_emotions, probabilities = predict_emotions(user_message, threshold=0.3)
+        
+        emotion_context = {
+            "emotions": predicted_emotions,
+            "probabilities": probabilities
+        }
+        
+        # Store in emotion history
+        st.session_state.emotion_history.append({
+            "timestamp": datetime.datetime.now(),
+            "emotions": predicted_emotions,
+            "probabilities": probabilities,
+            "message": user_message
+        })
+        
+        # Keep last 10 emotion analyses
+        st.session_state.emotion_history = st.session_state.emotion_history[-10:]
+        
+        st.session_state.last_emotion_data = emotion_context
+    
+    # Detect emotional trend
+    emotion_trend = None
+    if llm_service and len(st.session_state.emotion_history) >= 3:
+        emotion_trend = llm_service.detect_emotional_trend(st.session_state.emotion_history)
+    
+    # Generate LLM response
+    timestamp = datetime.datetime.now().strftime("%I:%M %p")
+    
+    if not llm_service:
+        response = "I need an OpenAI API key to chat with you. Please configure OPENAI_API_KEY in your environment or Streamlit secrets. 🔑"
+    else:
+        # Generate natural conversational response
+        response = llm_service.generate_response(
+            user_message=user_message,
+            chat_history=st.session_state.chat_history,
+            mode=mode,
+            personality=personality,
+            emotion_context=emotion_context,
+            emotion_trend=emotion_trend
+        )
+    
+    # Add to chat history
+    st.session_state.chat_history.append({
+        "role": "user",
+        "content": user_message,
+        "timestamp": timestamp,
+        "emotion_data": emotion_context
+    })
+    
+    st.session_state.chat_history.append({
+        "role": "assistant",
+        "content": response,
+        "timestamp": timestamp
+    })
+    
+    # Keep last 20 messages (10 exchanges)
+    st.session_state.chat_history = st.session_state.chat_history[-20:]
+
+
+# Main UI Layout
 with page_container():
     st.markdown('<div class="main-container">', unsafe_allow_html=True)
     
     # Hero
     gradient_hero(
-        "💛 Personal Emotion Companion",
-        "A private space to express how you feel and see what your words reveal."
+        "💜 EmoSense Companion",
+        "Your emotionally intelligent AI friend. Just chat naturally — I'll understand."
     )
     
     spacer("md")
     
-    # Two-column layout
-    col_left, col_right = st.columns([1, 1], gap="large")
+    # Settings row
+    col_settings1, col_settings2, col_settings3 = st.columns([2, 2, 1])
     
-    # LEFT COLUMN - Input
-    with col_left:
-        st.markdown("""
-        <div class="glass-card">
-            <h3 style="color: #FFFFFF; margin-bottom: 1rem;">✍️ Express Yourself</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown('<div style="margin-top: -1rem;"></div>', unsafe_allow_html=True)
-        
-        user_text = st.text_area(
-            "What's on your mind today?",
-            height=200,
-            placeholder="Type freely. This is just between you and EmoSense. Share your thoughts, feelings, or anything that's on your mind...",
+    with col_settings1:
+        mode = st.selectbox(
+            "🎭 Conversation Mode",
+            ["Casual Chat", "Comfort Me", "Help Me Reflect", "Hype Me Up", "Just Listen"],
+            key="mode_selector"
+        )
+        st.session_state.conversation_mode = mode
+    
+    with col_settings2:
+        personality = st.selectbox(
+            "✨ Companion Personality",
+            ["Friendly", "Calm", "Big Sister", "Funny", "Deep Thinker"],
+            key="personality_selector"
+        )
+        st.session_state.bot_personality = personality
+    
+    with col_settings3:
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+        show_emotions = st.checkbox("Show emotions", value=st.session_state.show_emotion_analysis)
+        st.session_state.show_emotion_analysis = show_emotions
+    
+    spacer("sm")
+    
+    # Display current mode
+    mode_descriptions = {
+        "Casual Chat": "💬 Natural, friendly conversation",
+        "Comfort Me": "🤗 Gentle support and grounding",
+        "Help Me Reflect": "🤔 Thoughtful exploration (auto emotion analysis)",
+        "Hype Me Up": "🔥 Energizing cheerleader mode",
+        "Just Listen": "👂 Minimal responses, maximum space"
+    }
+    
+    st.markdown(f"""
+    <div class="glass-card" style="padding: 0.75rem 1.25rem; margin-bottom: 1rem;">
+        <span class="mode-badge">{mode}</span>
+        <span style="color: #9CA3AF; font-size: 0.875rem;">{mode_descriptions.get(mode, '')}</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    spacer("sm")
+    
+    # Chat history display
+    render_chat_history()
+    
+    spacer("md")
+    
+    # Input area
+    col_input, col_buttons = st.columns([4, 1])
+    
+    with col_input:
+        user_input = st.text_area(
+            "Message",
+            height=100,
+            placeholder="Just type naturally... I'm here to listen. 💜",
             label_visibility="collapsed",
-            key="user_input_text"
+            key="user_message_input"
         )
+    
+    with col_buttons:
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
         
-        spacer("sm")
+        send_button = st.button("💬 Send", type="primary", use_container_width=True)
         
-        analysis_option = st.selectbox(
-            "What do you want from EmoSense?",
-            [
-                "Just label my emotions",
-                "Help me reflect on this",
-                "Suggest gentle coping ideas"
-            ]
-        )
-        
-        spacer("sm")
-        
-        if st.button("🔍 Analyze My Emotions", type="primary", use_container_width=True):
-            if user_text.strip():
+        if st.button("🔍 Analyze", use_container_width=True, help="Explicitly analyze emotions in your message"):
+            if user_input.strip():
+                # Force emotion analysis
                 with st.spinner("Understanding your emotions..."):
-                    # Detect emotions
-                    predicted_emotions, probabilities = predict_emotions(user_text, threshold=0.3)
+                    predicted_emotions, probabilities = predict_emotions(user_input, threshold=0.3)
                     
-                    # Generate context-aware AI response
-                    if analysis_option == "Just label my emotions":
+                    if llm_service:
+                        reflection = llm_service.generate_emotion_reflection(
+                            user_input,
+                            predicted_emotions,
+                            probabilities,
+                            st.session_state.bot_personality
+                        )
+                    else:
                         if predicted_emotions:
                             emotion_list = ", ".join([f"{e.capitalize()}" for e in predicted_emotions[:3]])
-                            ai_message = f"I sense {emotion_list} in your words. These emotions are valid and it's okay to feel them. 💜"
+                            reflection = f"I sense {emotion_list} in your words. These emotions are valid. 💜"
                         else:
-                            ai_message = "Your message seems emotionally neutral. Sometimes that's exactly what we need - a moment of calm. 🌊"
-                    
-                    elif analysis_option == "Help me reflect on this":
-                        if predicted_emotions:
-                            top_emotion = max(probabilities.items(), key=lambda x: x[1])
-                            
-                            reflections = {
-                                "joy": "✨ It sounds like you're experiencing something positive. What aspects of this situation bring you the most happiness?",
-                                "sadness": "💙 I hear that you're going through a difficult time. It's brave to acknowledge these feelings. What would comfort you right now?",
-                                "anger": "🔥 Your frustration comes through clearly. Anger often signals that something important to you isn't being honored. What boundary feels crossed?",
-                                "fear": "🌙 Uncertainty can be uncomfortable. What specifically worries you most about this situation?",
-                                "anxiety": "🌊 I notice worry in your words. Sometimes naming our fears makes them feel more manageable. What's the core of your concern?",
-                                "love": "❤️ There's warmth in what you're sharing. Love connects us deeply to what matters. Who or what are you grateful for?",
-                                "surprise": "⚡ Something unexpected has happened. How are you processing this change?",
-                                "neutral": "🤍 Your thoughts seem calm and measured. Sometimes clarity comes from a neutral perspective."
-                            }
-                            
-                            ai_message = reflections.get(top_emotion[0], 
-                                "Thank you for sharing. What does this situation mean to you personally? 💭")
-                        else:
-                            ai_message = "Your message has a balanced emotional tone. What would you like to explore further? 🌟"
-                    
-                    else:  # Coping strategies
-                        if predicted_emotions:
-                            top_emotion = max(probabilities.items(), key=lambda x: x[1])
-                            
-                            coping_strategies = {
-                                "joy": "💚 **Savor this moment.** Consider journaling about what went well today, or sharing your joy with someone you care about.",
-                                "sadness": "💙 **Be gentle with yourself.** Try: Taking a short walk, talking to a trusted friend, or doing something small that usually brings comfort.",
-                                "anger": "🧡 **Healthy anger processing:** Try physical movement, write out your feelings without filtering, or take 10 deep breaths.",
-                                "fear": "💜 **Grounding technique:** Name 5 things you see, 4 you hear, 3 you can touch, 2 you smell, 1 you taste.",
-                                "anxiety": "🩵 **Anxiety management:** Try 4-7-8 breathing (in 4, hold 7, out 8). Break big worries into smaller, manageable pieces.",
-                                "love": "❤️ **Nurture connection:** Express appreciation to those you care about, or take time to reflect on meaningful relationships.",
-                                "surprise": "💛 **Processing change:** Give yourself time to adjust. Write down your thoughts to make sense of new information.",
-                                "neutral": "🤍 **Maintain balance:** Keep up routines that support your well-being, like sleep, movement, and connection."
-                            }
-                            
-                            ai_message = coping_strategies.get(top_emotion[0], 
-                                "🌟 **General wellness:** Practice self-compassion, stay connected to supportive people, and prioritize rest.")
-                        else:
-                            ai_message = "🌟 You seem balanced. Continue with practices that support your well-being: rest, connection, and gentle self-care."
+                            reflection = "Your message feels emotionally balanced. 🌟"
                     
                     # Add to history
-                    st.session_state.personal_history.append({
-                        "timestamp": datetime.datetime.now(),
-                        "user_text": user_text,
+                    timestamp = datetime.datetime.now().strftime("%I:%M %p")
+                    emotion_context = {
                         "emotions": predicted_emotions,
-                        "probabilities": probabilities,
-                        "ai_reflection": ai_message,
-                        "option": analysis_option
+                        "probabilities": probabilities
+                    }
+                    
+                    st.session_state.chat_history.append({
+                        "role": "user",
+                        "content": user_input,
+                        "timestamp": timestamp,
+                        "emotion_data": emotion_context
                     })
                     
-                    st.success("✨ Analysis complete!")
+                    st.session_state.chat_history.append({
+                        "role": "assistant",
+                        "content": reflection,
+                        "timestamp": timestamp
+                    })
+                    
+                    st.session_state.chat_history = st.session_state.chat_history[-20:]
+                    
+                    # Store emotion data
+                    st.session_state.emotion_history.append({
+                        "timestamp": datetime.datetime.now(),
+                        "emotions": predicted_emotions,
+                        "probabilities": probabilities,
+                        "message": user_input
+                    })
+                    st.session_state.emotion_history = st.session_state.emotion_history[-10:]
+                    
                     st.rerun()
-            else:
-                st.warning("⚠️ Please enter some text to analyze.")
         
-        spacer("sm")
-        
-        if st.button("🗑️ Clear History", use_container_width=True, type="secondary"):
-            st.session_state.personal_history = []
+        if st.button("🗑️ Clear", use_container_width=True):
+            st.session_state.chat_history = []
+            st.session_state.emotion_history = []
+            st.session_state.last_emotion_data = None
             st.rerun()
     
-    # RIGHT COLUMN - Conversation
-    with col_right:
-        st.markdown("""
-        <div class="glass-card">
-            <h3 style="color: #FFFFFF; margin-bottom: 1rem;">💬 Your Emotional Journey</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown('<div style="margin-top: -1rem;"></div>', unsafe_allow_html=True)
-        
-        if not st.session_state.personal_history:
-            # Empty state
-            st.markdown("""
-            <div class="glass-card" style="text-align: center; padding: 3rem; margin-top: 1rem;">
-                <div style="font-size: 4rem; margin-bottom: 1rem;">🌟</div>
-                <h3 style="color: #FFFFFF; margin-bottom: 1rem;">Welcome to Your Safe Space</h3>
-                <p style="color: #A8A9B3; line-height: 1.8; max-width: 400px; margin: 0 auto;">
-                    Start by sharing what's on your mind in the left panel. 
-                    I'll help you understand the emotions in your words, 
-                    reflect on your experiences, or suggest gentle coping strategies.
-                </p>
-                <p style="color: #8A5CF6; font-size: 0.875rem; margin-top: 1.5rem; font-style: italic;">
-                    💜 Remember: EmoSense is not a replacement for professional mental health support.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            # Display conversation (newest first)
-            st.markdown('<div style="max-height: 600px; overflow-y: auto; padding-right: 0.5rem; margin-top: 1rem;">', unsafe_allow_html=True)
-            
-            for entry in reversed(st.session_state.personal_history):
-                # User message
-                st.markdown(f"""
-                <div class="message-user fade-in">
-                    {entry['user_text']}
-                </div>
-                <div style="clear: both;"></div>
-                """, unsafe_allow_html=True)
-                
-                # Emotion chips
-                if entry['emotions']:
-                    chips_html = " ".join([
-                        emotion_chip(e.capitalize(), entry['probabilities'][e], EMOJI_MAP.get(e, "🎭"))
-                        for e in entry['emotions'][:3]
-                    ])
-                    st.markdown(f'<div style="text-align: right; margin: 0.5rem 0 1rem 0;">{chips_html}</div>', unsafe_allow_html=True)
-                
-                # AI reflection
-                st.markdown(f"""
-                <div class="message-ai fade-in">
-                    {entry['ai_reflection']}
-                </div>
-                <div style="clear: both;"></div>
-                """, unsafe_allow_html=True)
-                
-                # Timestamp
-                timestamp_str = entry['timestamp'].strftime("%I:%M %p")
-                st.markdown(f'<div style="text-align: left; color: #A8A9B3; font-size: 0.75rem; margin-bottom: 1.5rem;">{timestamp_str}</div>', unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Reminder
-            spacer("sm")
-            st.markdown("""
-            <div style="background: rgba(138, 92, 246, 0.1); border-left: 3px solid #8A5CF6; padding: 1rem; border-radius: 8px;">
-                <p style="color: #A8A9B3; font-size: 0.875rem; margin: 0;">
-                    <strong style="color: #FFFFFF;">Remember:</strong> EmoSense is not a replacement for professional mental health support. 
-                    If you're experiencing a crisis, please reach out to a mental health professional or crisis hotline.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+    # Handle send button
+    if send_button and user_input.strip():
+        with st.spinner("💭 Thinking..."):
+            handle_user_message(user_input)
+        st.rerun()
+    
+    spacer("md")
+    
+    # Safety reminder
+    st.markdown("""
+    <div style="background: rgba(138, 92, 246, 0.1); border-left: 3px solid #8A5CF6; padding: 1rem; border-radius: 8px; margin-top: 2rem;">
+        <p style="color: #A8A9B3; font-size: 0.875rem; margin: 0;">
+            <strong style="color: #FFFFFF;">💜 Remember:</strong> EmoSense Companion is an AI tool for emotional support and reflection, 
+            not a replacement for professional mental health care. If you're in crisis, please reach out to a mental health 
+            professional or crisis hotline immediately.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     spacer("lg")
     st.markdown('</div>', unsafe_allow_html=True)
