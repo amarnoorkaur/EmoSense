@@ -5,7 +5,7 @@ Continuous, context-aware, emotionally intelligent conversational agent
 import streamlit as st
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
-from components.layout import set_page_config, inject_global_styles, page_container, gradient_hero, emotion_chip, spacer
+from components.layout import set_page_config, inject_global_styles, page_container, gradient_hero, emotion_chip, spacer, page_header, card, render_header
 from components.footer import render_footer
 from services.personal_llm_service import get_personal_llm_service
 import datetime
@@ -14,6 +14,7 @@ from typing import Optional, Dict, List
 # Configure page
 set_page_config()
 inject_global_styles()
+render_header()
 
 # Initialize LLM service
 llm_service = get_personal_llm_service()
@@ -40,139 +41,7 @@ if "last_emotion_data" not in st.session_state:
 if "clear_input" not in st.session_state:
     st.session_state.clear_input = False
 
-# Custom CSS for chat interface
-st.markdown("""
-<style>
-/* Chat container */
-.chat-container {
-    max-height: 500px;
-    overflow-y: auto;
-    padding: 1rem;
-    background: rgba(17, 24, 39, 0.3);
-    border-radius: 12px;
-    margin-bottom: 1rem;
-}
-
-/* User message (right side) */
-.message-user-chat {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 0.875rem 1.25rem;
-    border-radius: 18px 18px 4px 18px;
-    margin: 0.5rem 0 0.5rem auto;
-    max-width: 75%;
-    width: fit-content;
-    float: right;
-    clear: both;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    animation: slideInRight 0.3s ease-out;
-}
-
-/* Bot message (left side) */
-.message-bot-chat {
-    background: rgba(138, 92, 246, 0.15);
-    border: 1px solid rgba(138, 92, 246, 0.3);
-    color: #E5E7EB;
-    padding: 0.875rem 1.25rem;
-    border-radius: 18px 18px 18px 4px;
-    margin: 0.5rem auto 0.5rem 0;
-    max-width: 75%;
-    width: fit-content;
-    float: left;
-    clear: both;
-    animation: slideInLeft 0.3s ease-out;
-}
-
-/* Emotion chips in chat */
-.emotion-chip-inline {
-    display: inline-block;
-    background: rgba(138, 92, 246, 0.2);
-    border: 1px solid rgba(138, 92, 246, 0.4);
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    margin: 0.25rem;
-    color: #C4B5FD;
-}
-
-/* Timestamp */
-.timestamp {
-    font-size: 0.7rem;
-    color: #9CA3AF;
-    margin: 0.25rem 0 1rem 0;
-    clear: both;
-}
-
-.timestamp-user {
-    text-align: right;
-}
-
-.timestamp-bot {
-    text-align: left;
-}
-
-/* Input area styling */
-.stTextArea textarea {
-    background: rgba(17, 24, 39, 0.6) !important;
-    border: 1px solid rgba(138, 92, 246, 0.3) !important;
-    color: white !important;
-    border-radius: 12px !important;
-}
-
-/* Mode badges */
-.mode-badge {
-    display: inline-block;
-    background: rgba(138, 92, 246, 0.2);
-    border: 1px solid rgba(138, 92, 246, 0.4);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    color: #C4B5FD;
-    margin-right: 0.5rem;
-}
-
-/* Animations */
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes slideInLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-/* Scrollbar styling */
-.chat-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.chat-container::-webkit-scrollbar-track {
-    background: rgba(17, 24, 39, 0.3);
-    border-radius: 10px;
-}
-
-.chat-container::-webkit-scrollbar-thumb {
-    background: rgba(138, 92, 246, 0.5);
-    border-radius: 10px;
-}
-
-.chat-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(138, 92, 246, 0.7);
-}
-</style>
+# Custom styling handled globally
 """, unsafe_allow_html=True)
 
 
@@ -180,59 +49,22 @@ def render_chat_history():
     """Render the conversation history as chat bubbles"""
     if not st.session_state.chat_history:
         st.markdown("""
-        <div style="text-align: center; padding: 3rem; color: #9CA3AF;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
-            <h3 style="color: #E5E7EB;">Start a conversation</h3>
-            <p style="margin-top: 0.5rem;">Just type something below and I'll respond naturally.</p>
+        <div class="premium-card fade-in" style="text-align: center; padding: 2.5rem;">
+            <div style="font-size: 2.4rem; margin-bottom: 0.5rem;">??</div>
+            <h3 style="color: #E5E7EB; margin: 0 0 0.5rem;">Start a conversation</h3>
+            <p style="margin: 0; color: #A8A9B3;">Type anything below and I will respond with empathy.</p>
         </div>
         """, unsafe_allow_html=True)
         return
     
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    
-    # Render messages in order (oldest to newest)
-    for i, msg in enumerate(st.session_state.chat_history):
+    st.markdown('<div class="premium-card"><div class="chat-shell">', unsafe_allow_html=True)
+    for msg in st.session_state.chat_history:
         role = msg["role"]
         content = msg["content"]
         timestamp = msg.get("timestamp", "")
-        
-        if role == "user":
-            # User message
-            st.markdown(f"""
-            <div class="message-user-chat">{content}</div>
-            <div class="timestamp timestamp-user">{timestamp}</div>
-            """, unsafe_allow_html=True)
-            
-            # Show emotion chips if this message had analysis
-            emotion_data = msg.get("emotion_data")
-            if emotion_data and st.session_state.show_emotion_analysis:
-                emotions = emotion_data.get("emotions", [])
-                probs = emotion_data.get("probabilities", {})
-                if emotions:
-                    chips_html = " ".join([
-                        f'<span class="emotion-chip-inline">{EMOJI_MAP.get(e, "🎭")} {e.capitalize()} {probs[e]:.0%}</span>'
-                        for e in emotions[:3]
-                    ])
-                    st.markdown(f'<div style="text-align: right; margin-top: -0.75rem; margin-bottom: 1rem;">{chips_html}</div>', unsafe_allow_html=True)
-        
-        else:  # assistant
-            # Bot message
-            st.markdown(f"""
-            <div class="message-bot-chat">{content}</div>
-            <div class="timestamp timestamp-bot">{timestamp}</div>
-            """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Auto-scroll to bottom using JavaScript
-    st.markdown("""
-    <script>
-        const chatContainer = document.querySelector('.chat-container');
-        if (chatContainer) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-    </script>
-    """, unsafe_allow_html=True)
+        bubble_class = "chat-bubble chat-user" if role == "user" else "chat-bubble chat-ai"
+        st.markdown(f'<div class="{bubble_class}">{content}</div><div class="chat-meta">{timestamp}</div>', unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
 
 def should_analyze_emotions(user_message: str, mode: str) -> bool:
@@ -358,7 +190,7 @@ def handle_user_message(user_message: str):
 
 # Main UI Layout
 with page_container():
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
+    st.markdown('<div class="page-wrapper">', unsafe_allow_html=True)
     
     # Hero
     gradient_hero(

@@ -31,6 +31,8 @@ from components.layout import (
     inject_global_styles, 
     page_container,
     gradient_hero,
+    page_header,
+    card,
     spacer,
     render_header
 )
@@ -906,14 +908,14 @@ def render_chat_interface():
         for msg in st.session_state.business_chat_history:
             if msg["role"] == "user":
                 st.markdown(f"""
-                <div class="message-user fade-in">
+                <div class="chat-bubble chat-user">
                     {msg['content']}
                 </div>
                 <div style="clear: both;"></div>
                 """, unsafe_allow_html=True)
             else:
                 st.markdown(f"""
-                <div class="message-ai fade-in">
+                <div class="chat-bubble chat-ai">
                     {msg['content']}
                 </div>
                 <div style="clear: both;"></div>
@@ -964,40 +966,50 @@ def render_chat_interface():
 render_header()
 
 with page_container():
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
+    st.markdown('<div class="page-wrapper">', unsafe_allow_html=True)
     
-    gradient_hero(
-        "EmoSense AI",
-        "Therapist for YOU & BRAND"
+    page_header(
+        "Business Buddy",
+        "A calm, executive-ready analyst that turns customer feedback into action.",
+        primary_cta=("Run analysis", "#analysis"),
+        secondary_cta=("Open chat", "#chat")
     )
-    
-    spacer("lg")
-    
-    # INPUT CARD
-    st.markdown("""
-    <div class="glass-card" style="padding: 32px;">
-        <h3 style="color: #FFFFFF; margin-bottom: 1rem;">📊 Upload Customer Feedback</h3>
-        <p style="color: #A8A9B3; line-height: 1.6;">
-            Analyze single comments or upload a CSV file with multiple customer responses.
-            Get comprehensive emotion analysis, summaries, and strategic recommendations.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
     
     spacer("md")
+    st.markdown('<div id="analysis"></div>', unsafe_allow_html=True)
     
-    input_method = st.radio(
-        "Choose Input Method:",
-        ["📝 Single Comment Thread", "📄 CSV Upload"],
-        horizontal=True
-    )
+    input_col, highlight_col = st.columns([1.08, 0.92])
+    
+    with input_col:
+        card("""
+        <div class="section-title" style="font-size:30px;">Upload customer feedback</div>
+        <p class="section-subtitle">Drop a thread or a CSV. We keep it organized and give you clear insights.</p>
+        """)
+        
+        input_method = st.radio(
+            "Choose Input Method:",
+            ["Single Comment Thread", "CSV Upload"],
+            horizontal=True
+        )
+        
+    with highlight_col:
+        card("""
+        <div class="section-title" style="font-size:26px; margin-bottom:6px;">What you get</div>
+        <p class="section-subtitle" style="margin-bottom:12px;">Emotion radar, summaries, crisis alerts, and action-ready recommendations.</p>
+        <div class="stat-row">
+            <div class="stat-chip">28 emotion labels</div>
+            <div class="stat-chip">Root-cause clusters</div>
+            <div class="stat-chip">Crisis keywords</div>
+            <div class="stat-chip">Executive summaries</div>
+        </div>
+        """)
     
     spacer("sm")
     
     text_input = None
     csv_comments = []
     
-    if input_method == "📝 Single Comment Thread":
+    if input_method == "Single Comment Thread":
         text_input = st.text_area(
             "Enter customer feedback:",
             height=150,
@@ -1005,16 +1017,13 @@ with page_container():
         )
         
         if text_input:
-            # Split by newlines to handle multiple comments (one per line)
-            raw_lines = text_input.strip().split('\n')
-            # Filter out empty lines
+            raw_lines = text_input.strip().split('
+')
             csv_comments = [line.strip() for line in raw_lines if line.strip()]
-            
             if len(csv_comments) > 1:
-                st.info(f"📊 Detected {len(csv_comments)} comments (one per line)")
+                st.info(f"Detected {len(csv_comments)} comments (one per line)")
             else:
-                st.info(f"📊 Analyzing 1 comment")
-    
+                st.info("Analyzing 1 comment")
     else:
         uploaded_file = st.file_uploader(
             "Upload CSV file:",
@@ -1025,7 +1034,7 @@ with page_container():
         if uploaded_file:
             try:
                 df = pd.read_csv(uploaded_file)
-                st.success(f"✅ Loaded {len(df)} rows from CSV")
+                st.success(f"Loaded {len(df)} rows from CSV")
                 
                 text_columns = df.select_dtypes(include=['object']).columns.tolist()
                 
@@ -1036,12 +1045,12 @@ with page_container():
                     )
                     
                     csv_comments = df[comment_column].dropna().astype(str).tolist()
-                    st.info(f"📊 Found {len(csv_comments)} valid comments")
+                    st.info(f"Found {len(csv_comments)} valid comments")
                 else:
-                    st.error("❌ No text columns found in CSV")
+                    st.error("No text columns found in CSV")
             
             except Exception as e:
-                st.error(f"❌ Error reading CSV: {str(e)}")
+                st.error(f"Error reading CSV: {str(e)}")
     
     spacer("sm")
     
