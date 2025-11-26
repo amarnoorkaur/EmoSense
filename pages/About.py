@@ -3,12 +3,13 @@ About EmoSense AI - Glassmorphic Design
 Four clean cards explaining mission, audience, technology, and creator
 """
 import streamlit as st
-from components.layout import set_page_config, inject_global_styles, page_container, gradient_hero, section_card, spacer
+from components.layout import set_page_config, inject_global_styles, page_container, gradient_hero, section_card, spacer, render_header
 from components.footer import render_footer
 
 # Configure page
 set_page_config()
 inject_global_styles()
+render_header(active_page="about")
 
 # Main container
 with page_container():

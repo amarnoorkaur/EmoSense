@@ -4,7 +4,7 @@ Modern glassmorphic design with animations and premium AI startup aesthetics
 Version: 2.0
 """
 import streamlit as st
-from components.layout import set_page_config, inject_global_styles, page_container, spacer
+from components.layout import set_page_config, inject_global_styles, page_container, spacer, render_header
 from components.footer import render_footer
 
 # Configure page with custom title
@@ -389,6 +389,9 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+# Top navigation
+render_header(active_page="home")
 
 # Main container
 with page_container():

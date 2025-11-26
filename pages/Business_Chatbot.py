@@ -961,7 +961,7 @@ def render_chat_interface():
 # ============================================================================
 
 # Render header at the top
-render_header()
+render_header(active_page="business")
 
 with page_container():
     st.markdown('<div class="main-container">', unsafe_allow_html=True)
