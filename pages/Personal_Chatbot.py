@@ -64,6 +64,12 @@ if "last_voice_audio" not in st.session_state:
 if "voice_processing" not in st.session_state:
     st.session_state.voice_processing = False
 
+if "last_audio_hash" not in st.session_state:
+    st.session_state.last_audio_hash = None
+
+if "pending_tts_audio" not in st.session_state:
+    st.session_state.pending_tts_audio = None
+
 # Custom CSS for chat interface
 st.markdown("""
 <style>
@@ -667,34 +673,50 @@ with page_container():
         st.rerun()
     
     # Handle voice input (from mic button)
-    if audio_input is not None and not st.session_state.voice_processing:
-        st.session_state.voice_processing = True
+    if audio_input is not None:
+        # Read audio bytes and create a hash to track if it's new audio
+        audio_bytes = audio_input.read()
+        audio_hash = hash(audio_bytes)
         
-        if voice_service:
-            try:
-                with st.spinner("🎙️ Transcribing your voice..."):
-                    # Read audio bytes
-                    audio_bytes = audio_input.read()
-                    
-                    # Transcribe audio to text
-                    user_text = voice_service.speech_to_text(audio_bytes)
+        # Only process if this is new audio (different from last processed)
+        if audio_hash != st.session_state.last_audio_hash and len(audio_bytes) > 0:
+            st.session_state.last_audio_hash = audio_hash
+            
+            if voice_service:
+                try:
+                    with st.spinner("🎙️ Transcribing your voice..."):
+                        # Transcribe audio to text
+                        user_text = voice_service.speech_to_text(audio_bytes)
                     
                     if user_text.strip():
                         st.success(f"📝 You said: \"{user_text}\"")
-                
-                # Process the transcribed text as a regular message
-                with st.spinner("💭 Thinking..."):
-                    handle_user_message(user_text)
-                
-                st.session_state.voice_processing = False
-                st.rerun()
-                
-            except Exception as e:
-                st.error(f"❌ Error processing voice: {str(e)}")
-                st.session_state.voice_processing = False
-        else:
-            st.error("🔑 Voice service unavailable. Please configure OPENAI_API_KEY.")
-            st.session_state.voice_processing = False
+                        
+                        # Process the transcribed text as a regular message
+                        with st.spinner("💭 Thinking..."):
+                            handle_user_message(user_text)
+                        
+                        # Generate TTS for the bot's response
+                        with st.spinner("🔊 Generating voice response..."):
+                            # Get the last bot response
+                            if st.session_state.chat_history:
+                                last_response = st.session_state.chat_history[-1]["content"]
+                                tts_audio = voice_service.text_to_speech(last_response)
+                                st.session_state.pending_tts_audio = tts_audio
+                        
+                        st.rerun()
+                    else:
+                        st.warning("🎙️ Couldn't understand the audio. Please try again.")
+                        
+                except Exception as e:
+                    st.error(f"❌ Error processing voice: {str(e)}")
+            else:
+                st.error("🔑 Voice service unavailable. Please configure OPENAI_API_KEY.")
+    
+    # Auto-play TTS audio if available
+    if st.session_state.pending_tts_audio is not None:
+        st.audio(st.session_state.pending_tts_audio, format="audio/mp3", autoplay=True)
+        # Clear after playing
+        st.session_state.pending_tts_audio = None
     
     spacer("md")
     
