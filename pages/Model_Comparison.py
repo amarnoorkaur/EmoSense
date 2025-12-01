@@ -2,6 +2,12 @@
 Model Comparison - EmoSense AI
 Compare BERT vs Logistic Regression predictions in real-time
 """
+import sys
+import os
+
+# Fix import path for Streamlit Cloud
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import streamlit as st
 import pandas as pd
 from components.layout import set_page_config, inject_global_styles, page_container, gradient_hero, spacer
@@ -144,7 +150,7 @@ with page_container():
     with col1:
         threshold = st.slider("Confidence Threshold", 0.0, 1.0, 0.3, 0.05)
     with col2:
-        compare_button = st.button("🔬 Compare Models", type="primary", use_container_width=True)
+        compare_button = st.button("🔬 Compare Models", type="primary")
     
     if compare_button and input_text.strip():
         with st.spinner("🤖 Running all three models..."):
@@ -317,7 +323,7 @@ with page_container():
                     })
                 
                 df = pd.DataFrame(comparison_data)
-                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.dataframe(df, hide_index=True)
     
     elif input_text.strip() == "":
         st.info("👆 Enter some text above and click 'Compare Models' to see predictions from all three models")

@@ -12,10 +12,15 @@ Features:
 - Conversational chat interface
 - Full business report export
 """
+import sys
+import os
+
+# Fix import path for Streamlit Cloud
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import streamlit as st
 import pandas as pd
 import json
-import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 

@@ -3,6 +3,12 @@ Personal Emotion Companion - EmoSense AI
 Continuous, context-aware, emotionally intelligent conversational agent
 with Voice Chat support
 """
+import sys
+import os
+
+# Fix import path for Streamlit Cloud
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import streamlit as st
 from utils.predict import predict_emotions
 from utils.labels import EMOJI_MAP
@@ -584,9 +590,9 @@ with page_container():
     with col_buttons:
         st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
         
-        send_button = st.button("💬 Send", type="primary", use_container_width=True)
+        send_button = st.button("💬 Send", type="primary")
         
-        if st.button("🔍 Analyze", use_container_width=True, help="Explicitly analyze emotions in your message"):
+        if st.button("🔍 Analyze", help="Explicitly analyze emotions in your message"):
             if user_input.strip():
                 # Force emotion analysis
                 with st.spinner("Understanding your emotions..."):
@@ -641,7 +647,7 @@ with page_container():
                     st.session_state.clear_input = True
                     st.rerun()
         
-        if st.button("🗑️ Clear", use_container_width=True):
+        if st.button("🗑️ Clear"):
             st.session_state.chat_history = []
             st.session_state.emotion_history = []
             st.session_state.last_emotion_data = None
