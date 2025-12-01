@@ -499,291 +499,200 @@ with page_container():
     # Hero
     gradient_hero(
         "💜 EmoSense Companion",
-        "Your emotionally intelligent AI friend. Chat naturally or talk to me — I'll understand."
+        "Your emotionally intelligent AI friend. Type or talk — I'll understand."
     )
     
-    # Create tabs for Text Chat and Voice Chat
-    tab_text, tab_voice = st.tabs(["💬 Text Chat", "🎧 Voice Companion"])
+    # Settings row
+    col_settings1, col_settings2, col_settings3 = st.columns([2, 2, 1])
     
-    # ==================== TEXT CHAT TAB ====================
-    with tab_text:
-        # Settings row
-        col_settings1, col_settings2, col_settings3 = st.columns([2, 2, 1])
-        
-        with col_settings1:
-            mode = st.selectbox(
-                "🎭 Conversation Mode",
-                ["Casual Chat", "Comfort Me", "Help Me Reflect", "Hype Me Up", "Just Listen"],
-                key="mode_selector"
-            )
-            st.session_state.conversation_mode = mode
-        
-        with col_settings2:
-            personality = st.selectbox(
-                "✨ Companion Personality",
-                ["Friendly", "Calm", "Big Sister", "Funny", "Deep Thinker"],
-                key="personality_selector"
-            )
-            st.session_state.bot_personality = personality
-        
-        with col_settings3:
-            st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-            show_emotions = st.checkbox("Show emotions", value=st.session_state.show_emotion_analysis)
-            st.session_state.show_emotion_analysis = show_emotions
-        
-        spacer("sm")
-        
-        # Display current mode
-        mode_descriptions = {
-            "Casual Chat": "💬 Natural, friendly conversation",
-            "Comfort Me": "🤗 Gentle support and grounding",
-            "Help Me Reflect": "🤔 Thoughtful exploration (auto emotion analysis)",
-            "Hype Me Up": "🔥 Energizing cheerleader mode",
-            "Just Listen": "👂 Minimal responses, maximum space"
-        }
-        
-        st.markdown(f"""
-        <div class="glass-card" style="padding: 0.75rem 1.25rem; margin-bottom: 1rem;">
-            <span class="mode-badge">{mode}</span>
-            <span style="color: #9CA3AF; font-size: 0.875rem;">{mode_descriptions.get(mode, '')}</span>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        spacer("sm")
-        
-        # Chat history display
-        render_chat_history()
-        
-        spacer("md")
-        
-        # Input area
-        col_input, col_buttons = st.columns([4, 1])
-        
-        with col_input:
-            # Clear input after message is sent
-            if "user_message_input" not in st.session_state:
-                st.session_state.user_message_input = ""
-            
-            if st.session_state.clear_input:
-                st.session_state.user_message_input = ""
-                st.session_state.clear_input = False
-            
-            user_input = st.text_area(
-                "Message",
-                value=st.session_state.user_message_input,
-                height=100,
-                placeholder="Just type naturally... I'm here to listen. 💜",
-                label_visibility="collapsed",
-                key="personal_chat_input_box"
-            )
-        
-        with col_buttons:
-            st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-            
-            send_button = st.button("💬 Send", type="primary", use_container_width=True)
-            
-            if st.button("🔍 Analyze", use_container_width=True, help="Explicitly analyze emotions in your message"):
-                if user_input.strip():
-                    # Force emotion analysis
-                    with st.spinner("Understanding your emotions..."):
-                        predicted_emotions, probabilities = predict_emotions(user_input, threshold=0.3)
-                        
-                        if llm_service:
-                            reflection = llm_service.generate_emotion_reflection(
-                                user_input,
-                                predicted_emotions,
-                                probabilities,
-                                st.session_state.bot_personality
-                            )
-                        else:
-                            if predicted_emotions:
-                                emotion_list = ", ".join([f"{e.capitalize()}" for e in predicted_emotions[:3]])
-                                reflection = f"I sense {emotion_list} in your words. These emotions are valid. 💜"
-                            else:
-                                reflection = "Your message feels emotionally balanced. 🌟"
-                        
-                        # Add to history
-                        timestamp = datetime.datetime.now().strftime("%I:%M %p")
-                        emotion_context = {
-                            "emotions": predicted_emotions,
-                            "probabilities": probabilities
-                        }
-                        
-                        st.session_state.chat_history.append({
-                            "role": "user",
-                            "content": user_input,
-                            "timestamp": timestamp,
-                            "emotion_data": emotion_context
-                        })
-                        
-                        st.session_state.chat_history.append({
-                            "role": "assistant",
-                            "content": reflection,
-                            "timestamp": timestamp
-                        })
-                        
-                        st.session_state.chat_history = st.session_state.chat_history[-20:]
-                        
-                        # Store emotion data
-                        st.session_state.emotion_history.append({
-                            "timestamp": datetime.datetime.now(),
-                            "emotions": predicted_emotions,
-                            "probabilities": probabilities,
-                            "message": user_input
-                        })
-                        st.session_state.emotion_history = st.session_state.emotion_history[-10:]
-                        
-                        # Clear input box
-                        st.session_state.clear_input = True
-                        st.rerun()
-            
-            if st.button("🗑️ Clear", use_container_width=True):
-                st.session_state.chat_history = []
-                st.session_state.emotion_history = []
-                st.session_state.last_emotion_data = None
-                st.session_state.clear_input = True
-                st.rerun()
-        
-        # Handle send button
-        if send_button and user_input.strip():
-            # Store the input before clearing
-            message_to_send = user_input
-            # Clear the input immediately
-            st.session_state.user_message_input = ""
-            st.session_state.clear_input = True
-            
-            with st.spinner("💭 Thinking..."):
-                handle_user_message(message_to_send)
-            st.rerun()
-    
-    # ==================== VOICE CHAT TAB ====================
-    with tab_voice:
-        st.markdown("""
-        <div style="text-align: center; margin-bottom: 1.5rem;">
-            <h2 style="color: #E5E7EB; margin: 0;">🎧 Voice Companion – Talk to EmoSense</h2>
-            <p style="color: #9CA3AF; margin-top: 0.5rem;">Record your voice and I'll respond with speech</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Voice settings row
-        col_voice_settings1, col_voice_settings2 = st.columns([3, 1])
-        
-        with col_voice_settings1:
-            st.markdown("""
-            <div class="voice-recording-hint">
-                💡 <strong>Tip:</strong> Click the microphone button to record your message. 
-                Speak naturally and click again to stop recording.
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col_voice_settings2:
-            show_voice_emotion = st.checkbox(
-                "Show detected emotion", 
-                value=st.session_state.show_voice_emotion,
-                key="voice_emotion_toggle"
-            )
-            st.session_state.show_voice_emotion = show_voice_emotion
-        
-        spacer("sm")
-        
-        # Voice chat history display
-        render_voice_chat_history()
-        
-        spacer("md")
-        
-        # Voice input section
-        st.markdown("""
-        <div style="background: rgba(138, 92, 246, 0.1); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
-            <p style="color: #C4B5FD; margin: 0 0 0.75rem; font-weight: 500;">🎙️ Record Your Message</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Audio input widget
-        audio_input = st.audio_input(
-            "Record your voice message",
-            key="voice_audio_input",
-            label_visibility="collapsed"
+    with col_settings1:
+        mode = st.selectbox(
+            "🎭 Conversation Mode",
+            ["Casual Chat", "Comfort Me", "Help Me Reflect", "Hype Me Up", "Just Listen"],
+            key="mode_selector"
         )
-        
-        # Process voice input
-        if audio_input is not None and not st.session_state.voice_processing:
-            st.session_state.voice_processing = True
-            
-            if voice_service:
-                try:
-                    with st.spinner("🎙️ Transcribing your voice..."):
-                        # Read audio bytes
-                        audio_bytes = audio_input.read()
-                        
-                        # Step 1: Transcribe
-                        user_text = voice_service.speech_to_text(audio_bytes)
-                        
-                        if user_text.strip():
-                            st.success(f"📝 Transcribed: \"{user_text}\"")
-                            
-                    with st.spinner("🧠 Analyzing emotions..."):
-                        # Step 2: Detect emotion
-                        emotion, confidence = detect_emotion_for_voice(user_text)
-                    
-                    with st.spinner("💭 Generating supportive response..."):
-                        # Step 3: Generate response
-                        bot_response = voice_service.generate_supportive_reply(
-                            user_text,
-                            emotion,
-                            confidence,
-                            st.session_state.voice_chat_history
-                        )
-                    
-                    with st.spinner("🔊 Converting to speech..."):
-                        # Step 4: Convert to speech
-                        audio_response = voice_service.text_to_speech(bot_response)
-                    
-                    # Step 5: Add to conversation history
-                    st.session_state.voice_chat_history.append({
-                        "role": "user",
-                        "content": user_text,
-                        "emotion": emotion,
-                        "confidence": confidence,
-                        "timestamp": datetime.datetime.now().strftime("%I:%M %p")
-                    })
-                    
-                    st.session_state.voice_chat_history.append({
-                        "role": "assistant",
-                        "content": bot_response,
-                        "audio": audio_response,
-                        "timestamp": datetime.datetime.now().strftime("%I:%M %p")
-                    })
-                    
-                    # Keep last 20 messages
-                    st.session_state.voice_chat_history = st.session_state.voice_chat_history[-20:]
-                    
-                    # Store latest audio for playback
-                    st.session_state.last_voice_audio = audio_response
-                    
-                    st.session_state.voice_processing = False
-                    st.rerun()
-                    
-                except Exception as e:
-                    st.error(f"❌ Error processing voice: {str(e)}")
-                    st.session_state.voice_processing = False
-            else:
-                st.error("🔑 Voice service unavailable. Please configure OPENAI_API_KEY.")
-                st.session_state.voice_processing = False
-        
-        spacer("sm")
-        
-        # Clear voice history button
-        col_clear, col_spacer = st.columns([1, 3])
-        with col_clear:
-            if st.button("🗑️ Clear Voice History", use_container_width=True, key="clear_voice_btn"):
-                st.session_state.voice_chat_history = []
-                st.session_state.last_voice_audio = None
-                st.session_state.voice_processing = False
-                st.rerun()
+        st.session_state.conversation_mode = mode
+    
+    with col_settings2:
+        personality = st.selectbox(
+            "✨ Companion Personality",
+            ["Friendly", "Calm", "Big Sister", "Funny", "Deep Thinker"],
+            key="personality_selector"
+        )
+        st.session_state.bot_personality = personality
+    
+    with col_settings3:
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+        show_emotions = st.checkbox("Show emotions", value=st.session_state.show_emotion_analysis)
+        st.session_state.show_emotion_analysis = show_emotions
+    
+    spacer("sm")
+    
+    # Display current mode
+    mode_descriptions = {
+        "Casual Chat": "💬 Natural, friendly conversation",
+        "Comfort Me": "🤗 Gentle support and grounding",
+        "Help Me Reflect": "🤔 Thoughtful exploration (auto emotion analysis)",
+        "Hype Me Up": "🔥 Energizing cheerleader mode",
+        "Just Listen": "👂 Minimal responses, maximum space"
+    }
+    
+    st.markdown(f"""
+    <div class="glass-card" style="padding: 0.75rem 1.25rem; margin-bottom: 1rem;">
+        <span class="mode-badge">{mode}</span>
+        <span style="color: #9CA3AF; font-size: 0.875rem;">{mode_descriptions.get(mode, '')}</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    spacer("sm")
+    
+    # Chat history display
+    render_chat_history()
     
     spacer("md")
     
-    # Safety reminder (shown for both tabs)
+    # Input area with text and voice options
+    col_input, col_mic, col_buttons = st.columns([3.5, 0.5, 1])
+    
+    with col_input:
+        # Clear input after message is sent
+        if "user_message_input" not in st.session_state:
+            st.session_state.user_message_input = ""
+        
+        if st.session_state.clear_input:
+            st.session_state.user_message_input = ""
+            st.session_state.clear_input = False
+        
+        user_input = st.text_area(
+            "Message",
+            value=st.session_state.user_message_input,
+            height=100,
+            placeholder="Type or click 🎙️ to talk... I'm here to listen. 💜",
+            label_visibility="collapsed",
+            key="personal_chat_input_box"
+        )
+    
+    with col_mic:
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+        # Voice input - mic button
+        audio_input = st.audio_input(
+            "🎙️",
+            key="inline_voice_input",
+            label_visibility="collapsed"
+        )
+    
+    with col_buttons:
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+        
+        send_button = st.button("💬 Send", type="primary", use_container_width=True)
+        
+        if st.button("🔍 Analyze", use_container_width=True, help="Explicitly analyze emotions in your message"):
+            if user_input.strip():
+                # Force emotion analysis
+                with st.spinner("Understanding your emotions..."):
+                    predicted_emotions, probabilities = predict_emotions(user_input, threshold=0.3)
+                    
+                    if llm_service:
+                        reflection = llm_service.generate_emotion_reflection(
+                            user_input,
+                            predicted_emotions,
+                            probabilities,
+                            st.session_state.bot_personality
+                        )
+                    else:
+                        if predicted_emotions:
+                            emotion_list = ", ".join([f"{e.capitalize()}" for e in predicted_emotions[:3]])
+                            reflection = f"I sense {emotion_list} in your words. These emotions are valid. 💜"
+                        else:
+                            reflection = "Your message feels emotionally balanced. 🌟"
+                    
+                    # Add to history
+                    timestamp = datetime.datetime.now().strftime("%I:%M %p")
+                    emotion_context = {
+                        "emotions": predicted_emotions,
+                        "probabilities": probabilities
+                    }
+                    
+                    st.session_state.chat_history.append({
+                        "role": "user",
+                        "content": user_input,
+                        "timestamp": timestamp,
+                        "emotion_data": emotion_context
+                    })
+                    
+                    st.session_state.chat_history.append({
+                        "role": "assistant",
+                        "content": reflection,
+                        "timestamp": timestamp
+                    })
+                    
+                    st.session_state.chat_history = st.session_state.chat_history[-20:]
+                    
+                    # Store emotion data
+                    st.session_state.emotion_history.append({
+                        "timestamp": datetime.datetime.now(),
+                        "emotions": predicted_emotions,
+                        "probabilities": probabilities,
+                        "message": user_input
+                    })
+                    st.session_state.emotion_history = st.session_state.emotion_history[-10:]
+                    
+                    # Clear input box
+                    st.session_state.clear_input = True
+                    st.rerun()
+        
+        if st.button("🗑️ Clear", use_container_width=True):
+            st.session_state.chat_history = []
+            st.session_state.emotion_history = []
+            st.session_state.last_emotion_data = None
+            st.session_state.clear_input = True
+            st.rerun()
+    
+    # Handle text send button
+    if send_button and user_input.strip():
+        # Store the input before clearing
+        message_to_send = user_input
+        # Clear the input immediately
+        st.session_state.user_message_input = ""
+        st.session_state.clear_input = True
+        
+        with st.spinner("💭 Thinking..."):
+            handle_user_message(message_to_send)
+        st.rerun()
+    
+    # Handle voice input (from mic button)
+    if audio_input is not None and not st.session_state.voice_processing:
+        st.session_state.voice_processing = True
+        
+        if voice_service:
+            try:
+                with st.spinner("🎙️ Transcribing your voice..."):
+                    # Read audio bytes
+                    audio_bytes = audio_input.read()
+                    
+                    # Transcribe audio to text
+                    user_text = voice_service.speech_to_text(audio_bytes)
+                    
+                    if user_text.strip():
+                        st.success(f"📝 You said: \"{user_text}\"")
+                
+                # Process the transcribed text as a regular message
+                with st.spinner("💭 Thinking..."):
+                    handle_user_message(user_text)
+                
+                st.session_state.voice_processing = False
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"❌ Error processing voice: {str(e)}")
+                st.session_state.voice_processing = False
+        else:
+            st.error("🔑 Voice service unavailable. Please configure OPENAI_API_KEY.")
+            st.session_state.voice_processing = False
+    
+    spacer("md")
+    
+    # Safety reminder
     st.markdown("""
     <div style="background: rgba(138, 92, 246, 0.1); border-left: 3px solid #8A5CF6; padding: 1rem; border-radius: 8px; margin-top: 2rem;">
         <p style="color: #A8A9B3; font-size: 0.875rem; margin: 0;">
