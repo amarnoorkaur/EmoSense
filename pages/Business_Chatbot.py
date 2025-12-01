@@ -80,6 +80,14 @@ except Exception as e:
     VIRAL_DETECTOR_AVAILABLE = False
     print(f"Viral detector unavailable: {e}")
 
+# Answer comparison component
+try:
+    from components.answer_comparison import render_answer_comparison
+    COMPARISON_AVAILABLE = True
+except Exception as e:
+    COMPARISON_AVAILABLE = False
+    print(f"Answer comparison unavailable: {e}")
+
 # OpenAI for chat
 from openai import OpenAI
 
@@ -1487,6 +1495,21 @@ with page_container():
             # Render explanation as markdown to properly display bold text
             st.markdown(vs['explanation'])
             
+            spacer("lg")
+        
+        # RAW VS REFINED ANSWER COMPARISON SECTION
+        if COMPARISON_AVAILABLE:
+            st.markdown("---")
+            with st.expander("🔬 **Explore: Raw vs Refined Answer Comparison**", expanded=False):
+                st.markdown("""
+                <div style="background: rgba(138, 92, 246, 0.1); padding: 16px; border-radius: 12px; margin-bottom: 1rem;">
+                    <p style="color: #A8A9B3; margin: 0; font-size: 0.95rem;">
+                        See how <strong style="color: #8A5CF6;">prompt engineering</strong> transforms generic AI responses 
+                        into structured, actionable business insights. Try asking a business question below!
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                render_answer_comparison()
             spacer("lg")
         
         # CHAT INTERFACE - Moved before Download section
