@@ -229,7 +229,7 @@ def render_answer_comparison():
         "🎯 Ask a business-related question:",
         value=default_value,
         placeholder="e.g., How do I improve customer satisfaction?",
-        key="business_question_input"
+        key="comparison_question_input"
     )
     
     # Update session state if user types
