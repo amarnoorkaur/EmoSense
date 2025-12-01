@@ -80,13 +80,13 @@ except Exception as e:
     VIRAL_DETECTOR_AVAILABLE = False
     print(f"Viral detector unavailable: {e}")
 
-# Answer comparison component
+# Answer comparison service for Raw vs Refined comparison
 try:
-    from components.answer_comparison import render_answer_comparison
-    COMPARISON_AVAILABLE = True
+    from services.answer_comparison_service import get_comparison_service
+    COMPARISON_SERVICE_AVAILABLE = True
 except Exception as e:
-    COMPARISON_AVAILABLE = False
-    print(f"Answer comparison unavailable: {e}")
+    COMPARISON_SERVICE_AVAILABLE = False
+    print(f"Answer comparison service unavailable: {e}")
 
 # OpenAI for chat
 from openai import OpenAI
@@ -139,6 +139,8 @@ def init_session_state():
         # Chat input clearing
         "business_question_input": "",
         "clear_business_input": False,
+        # Comparison mode toggle
+        "show_comparison_mode": False,
     }
     
     for key, value in defaults.items():
@@ -897,7 +899,7 @@ def render_sentiment_pie_chart(sentiments: Dict[str, float]):
 
 
 def render_chat_interface():
-    """Render Business Buddy chat interface"""
+    """Render Business Buddy chat interface with Raw vs Refined comparison"""
     
     # Root Cause Insight Section Header (appears once above chat)
     st.markdown("""
@@ -929,6 +931,17 @@ def render_chat_interface():
     
     spacer("sm")
     
+    # Toggle for comparison mode
+    show_comparison = st.checkbox(
+        "🔬 Show Raw vs Refined Comparison", 
+        value=st.session_state.get("show_comparison_mode", False),
+        help="Compare raw ChatGPT response with Business Buddy's refined response"
+    )
+    st.session_state.show_comparison_mode = show_comparison
+    
+    spacer("sm")
+    
+    # Display chat history
     if st.session_state.business_chat_history:
         for msg in st.session_state.business_chat_history:
             if msg["role"] == "user":
@@ -938,7 +951,43 @@ def render_chat_interface():
                 </div>
                 <div style="clear: both;"></div>
                 """, unsafe_allow_html=True)
+            elif msg["role"] == "comparison":
+                # Side-by-side comparison display
+                col_raw, col_refined = st.columns(2)
+                
+                with col_raw:
+                    st.markdown(f"""
+                    <div style="background: rgba(75, 85, 99, 0.2); border: 1px solid rgba(75, 85, 99, 0.4); 
+                                border-radius: 16px; padding: 20px; height: 100%;">
+                        <h4 style="color: #9CA3AF; margin-bottom: 1rem; padding-bottom: 0.5rem; 
+                                   border-bottom: 2px solid rgba(156, 163, 175, 0.3);">
+                            🤖 Raw ChatGPT <span style="background: rgba(107, 114, 128, 0.3); color: #9CA3AF; 
+                                                        padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem;">Basic</span>
+                        </h4>
+                        <div style="color: #D1D5DB; line-height: 1.7; font-size: 0.9rem;">
+                            {msg['raw_response']}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col_refined:
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, rgba(138, 92, 246, 0.15), rgba(59, 130, 246, 0.15)); 
+                                border: 1px solid rgba(138, 92, 246, 0.4); border-radius: 16px; padding: 20px; height: 100%;">
+                        <h4 style="color: #A78BFA; margin-bottom: 1rem; padding-bottom: 0.5rem; 
+                                   border-bottom: 2px solid rgba(167, 139, 250, 0.3);">
+                            ✨ Business Buddy <span style="background: rgba(138, 92, 246, 0.3); color: #A78BFA; 
+                                                          padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem;">Enhanced</span>
+                        </h4>
+                        <div style="color: #E5E7EB; line-height: 1.7; font-size: 0.9rem;">
+                            {msg['refined_response']}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown('<div style="clear: both; margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
             else:
+                # Regular assistant response (non-comparison mode)
                 st.markdown(f"""
                 <div class="chat-bubble chat-ai">
                     {msg['content']}
@@ -973,18 +1022,41 @@ def render_chat_interface():
         st.session_state.business_question_input = ""
         st.session_state.clear_business_input = True
         
+        # Add user message
         st.session_state.business_chat_history.append({
             "role": "user",
             "content": question_to_send
         })
         
-        with st.spinner("🤔 Business Buddy is thinking..."):
-            response = handle_business_chat_query(question_to_send)
-        
-        st.session_state.business_chat_history.append({
-            "role": "assistant",
-            "content": response
-        })
+        if show_comparison and COMPARISON_SERVICE_AVAILABLE:
+            # COMPARISON MODE: Get both raw and refined responses
+            with st.spinner("🤖 Generating both Raw and Refined responses for comparison..."):
+                # Get raw ChatGPT response
+                comparison_service = get_comparison_service()
+                if comparison_service:
+                    raw_result = comparison_service.get_raw_answer(question_to_send)
+                    raw_response = raw_result.get("response", "Error generating raw response")
+                else:
+                    raw_response = "⚠️ Comparison service unavailable"
+                
+                # Get refined Business Buddy response (with context)
+                refined_response = handle_business_chat_query(question_to_send)
+            
+            # Store comparison response
+            st.session_state.business_chat_history.append({
+                "role": "comparison",
+                "raw_response": raw_response.replace('\n', '<br>'),
+                "refined_response": refined_response.replace('\n', '<br>')
+            })
+        else:
+            # NORMAL MODE: Just get Business Buddy response
+            with st.spinner("🤔 Business Buddy is thinking..."):
+                response = handle_business_chat_query(question_to_send)
+            
+            st.session_state.business_chat_history.append({
+                "role": "assistant",
+                "content": response
+            })
         
         st.rerun()
     
@@ -1495,21 +1567,6 @@ with page_container():
             # Render explanation as markdown to properly display bold text
             st.markdown(vs['explanation'])
             
-            spacer("lg")
-        
-        # RAW VS REFINED ANSWER COMPARISON SECTION
-        if COMPARISON_AVAILABLE:
-            st.markdown("---")
-            with st.expander("🔬 **Explore: Raw vs Refined Answer Comparison**", expanded=False):
-                st.markdown("""
-                <div style="background: rgba(138, 92, 246, 0.1); padding: 16px; border-radius: 12px; margin-bottom: 1rem;">
-                    <p style="color: #A8A9B3; margin: 0; font-size: 0.95rem;">
-                        See how <strong style="color: #8A5CF6;">prompt engineering</strong> transforms generic AI responses 
-                        into structured, actionable business insights. Try asking a business question below!
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-                render_answer_comparison()
             spacer("lg")
         
         # CHAT INTERFACE - Moved before Download section
