@@ -782,6 +782,31 @@ def handle_business_chat_query(user_message: str) -> str:
 # UI RENDERING FUNCTIONS
 # ============================================================================
 
+import re
+
+def format_markdown_to_html(text: str) -> str:
+    """
+    Convert markdown formatting to HTML for proper rendering.
+    Handles **bold**, *italic*, and preserves line breaks.
+    """
+    if not text:
+        return text
+    
+    # Convert **bold** to <strong>bold</strong>
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    
+    # Convert *italic* to <em>italic</em> (but not inside already converted strong tags)
+    text = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<em>\1</em>', text)
+    
+    # Convert numbered lists (1. item) to proper formatting
+    text = re.sub(r'^(\d+)\.\s+', r'<strong>\1.</strong> ', text, flags=re.MULTILINE)
+    
+    # Convert - bullet points to styled bullets
+    text = re.sub(r'^-\s+', r'• ', text, flags=re.MULTILINE)
+    
+    return text
+
+
 def render_emotion_distribution_chart(emotions: Dict[str, float]):
     """Render emotion distribution bar chart"""
     sorted_emotions = sorted(emotions.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -952,40 +977,124 @@ def render_chat_interface():
                 <div style="clear: both;"></div>
                 """, unsafe_allow_html=True)
             elif msg["role"] == "comparison":
-                # Side-by-side comparison display
+                # Side-by-side comparison display with improved UI
+                st.markdown("""
+                <style>
+                .comparison-container {
+                    display: flex;
+                    gap: 1rem;
+                    margin: 1rem 0;
+                }
+                .comparison-card {
+                    flex: 1;
+                    border-radius: 16px;
+                    padding: 24px;
+                    min-height: 300px;
+                }
+                .comparison-card.raw {
+                    background: rgba(55, 65, 81, 0.3);
+                    border: 1px solid rgba(107, 114, 128, 0.4);
+                }
+                .comparison-card.refined {
+                    background: linear-gradient(135deg, rgba(138, 92, 246, 0.2), rgba(59, 130, 246, 0.15));
+                    border: 2px solid rgba(138, 92, 246, 0.5);
+                    box-shadow: 0 4px 20px rgba(138, 92, 246, 0.2);
+                }
+                .comparison-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    margin-bottom: 1rem;
+                    padding-bottom: 0.75rem;
+                    border-bottom: 2px solid rgba(255,255,255,0.1);
+                }
+                .comparison-header.raw {
+                    border-bottom-color: rgba(107, 114, 128, 0.4);
+                }
+                .comparison-header.refined {
+                    border-bottom-color: rgba(138, 92, 246, 0.5);
+                }
+                .comparison-title {
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    margin: 0;
+                }
+                .comparison-title.raw {
+                    color: #9CA3AF;
+                }
+                .comparison-title.refined {
+                    color: #A78BFA;
+                }
+                .comparison-badge {
+                    padding: 0.25rem 0.75rem;
+                    border-radius: 20px;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                }
+                .comparison-badge.raw {
+                    background: rgba(107, 114, 128, 0.3);
+                    color: #9CA3AF;
+                }
+                .comparison-badge.refined {
+                    background: rgba(138, 92, 246, 0.3);
+                    color: #A78BFA;
+                }
+                .comparison-content {
+                    line-height: 1.8;
+                    font-size: 0.92rem;
+                }
+                .comparison-content.raw {
+                    color: #D1D5DB;
+                }
+                .comparison-content.refined {
+                    color: #F3F4F6;
+                }
+                .comparison-content strong {
+                    color: #FFFFFF;
+                    font-weight: 600;
+                }
+                .comparison-content.refined strong {
+                    color: #C4B5FD;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
                 col_raw, col_refined = st.columns(2)
+                
+                # Format the responses to convert markdown to HTML
+                raw_formatted = format_markdown_to_html(msg['raw_response'])
+                refined_formatted = format_markdown_to_html(msg['refined_response'])
                 
                 with col_raw:
                     st.markdown(f"""
-                    <div style="background: rgba(75, 85, 99, 0.2); border: 1px solid rgba(75, 85, 99, 0.4); 
-                                border-radius: 16px; padding: 20px; height: 100%;">
-                        <h4 style="color: #9CA3AF; margin-bottom: 1rem; padding-bottom: 0.5rem; 
-                                   border-bottom: 2px solid rgba(156, 163, 175, 0.3);">
-                            🤖 Raw ChatGPT <span style="background: rgba(107, 114, 128, 0.3); color: #9CA3AF; 
-                                                        padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem;">Basic</span>
-                        </h4>
-                        <div style="color: #D1D5DB; line-height: 1.7; font-size: 0.9rem;">
-                            {msg['raw_response']}
+                    <div class="comparison-card raw">
+                        <div class="comparison-header raw">
+                            <span style="font-size: 1.5rem;">🤖</span>
+                            <h4 class="comparison-title raw">Raw ChatGPT</h4>
+                            <span class="comparison-badge raw">Basic</span>
+                        </div>
+                        <div class="comparison-content raw">
+                            {raw_formatted}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
                 
                 with col_refined:
                     st.markdown(f"""
-                    <div style="background: linear-gradient(135deg, rgba(138, 92, 246, 0.15), rgba(59, 130, 246, 0.15)); 
-                                border: 1px solid rgba(138, 92, 246, 0.4); border-radius: 16px; padding: 20px; height: 100%;">
-                        <h4 style="color: #A78BFA; margin-bottom: 1rem; padding-bottom: 0.5rem; 
-                                   border-bottom: 2px solid rgba(167, 139, 250, 0.3);">
-                            ✨ Business Buddy <span style="background: rgba(138, 92, 246, 0.3); color: #A78BFA; 
-                                                          padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem;">Enhanced</span>
-                        </h4>
-                        <div style="color: #E5E7EB; line-height: 1.7; font-size: 0.9rem;">
-                            {msg['refined_response']}
+                    <div class="comparison-card refined">
+                        <div class="comparison-header refined">
+                            <span style="font-size: 1.5rem;">✨</span>
+                            <h4 class="comparison-title refined">Business Buddy</h4>
+                            <span class="comparison-badge refined">Enhanced</span>
+                        </div>
+                        <div class="comparison-content refined">
+                            {refined_formatted}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
                 
-                st.markdown('<div style="clear: both; margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
+                spacer("sm")
             else:
                 # Regular assistant response (non-comparison mode)
                 st.markdown(f"""
