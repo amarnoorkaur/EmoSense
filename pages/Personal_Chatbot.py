@@ -1,10 +1,11 @@
 """
 Personal Emotion Companion - EmoSense AI
 Continuous, context-aware, emotionally intelligent conversational agent
-with Voice Chat support
+with Voice Chat support and optional COPE-based persona customization
 """
 import sys
 import os
+import hashlib
 
 # Fix import path for Streamlit Cloud
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -16,6 +17,14 @@ from components.layout import set_page_config, inject_global_styles, page_contai
 from components.footer import render_footer
 from services.personal_llm_service import get_personal_llm_service
 from services.voice_chat_service import get_voice_chat_service
+from services.cope_assessment_service import (
+    COPE_QUESTIONS,
+    RESPONSE_OPTIONS,
+    PERSONA_INFO,
+    compute_cope_scores,
+    assign_persona
+)
+from services.persona_engine import get_persona_engine, get_persona_metadata
 import datetime
 from typing import Optional, Dict, List, Tuple
 
@@ -28,6 +37,34 @@ llm_service = get_personal_llm_service()
 
 # Initialize Voice Chat service
 voice_service = get_voice_chat_service()
+
+# ============================================================
+# SESSION STATE INITIALIZATION
+# ============================================================
+
+# Companion mode: "choice" -> "onboarding" -> "chat" OR "choice" -> "chat"
+if "companion_mode" not in st.session_state:
+    st.session_state.companion_mode = "choice"  # "choice", "onboarding", "chat"
+
+# Customization choice: None, "customized", "general"
+if "customization_choice" not in st.session_state:
+    st.session_state.customization_choice = None
+
+# Onboarding state
+if "onboarding_page" not in st.session_state:
+    st.session_state.onboarding_page = 0
+
+if "cope_answers" not in st.session_state:
+    st.session_state.cope_answers = {}
+
+if "cope_scores" not in st.session_state:
+    st.session_state.cope_scores = {}
+
+if "persona" not in st.session_state:
+    st.session_state.persona = None
+
+if "persona_info" not in st.session_state:
+    st.session_state.persona_info = None
 
 # Initialize session state for conversation memory
 if "chat_history" not in st.session_state:
@@ -79,9 +116,14 @@ PERSONA_TO_PERSONALITY = {
     "Motivational Guide": "Friendly"
 }
 
-# Apply persona if onboarding was completed
-if st.session_state.get("onboarding_complete") and st.session_state.get("persona"):
+# Apply persona if customization was completed
+if st.session_state.persona and st.session_state.customization_choice == "customized":
     mapped_personality = PERSONA_TO_PERSONALITY.get(
+        st.session_state.persona, 
+        st.session_state.bot_personality
+    )
+    if st.session_state.bot_personality != mapped_personality:
+        st.session_state.bot_personality = mapped_personality
         st.session_state.persona, 
         st.session_state.bot_personality
     )
@@ -522,39 +564,252 @@ def handle_user_message(user_message: str):
     st.session_state.chat_history = st.session_state.chat_history[-20:]
 
 
-# Main UI Layout
-with page_container():
-    st.markdown('<div class="page-wrapper">', unsafe_allow_html=True)
+# ============================================================
+# RENDER FUNCTIONS FOR EACH MODE
+# ============================================================
+
+def render_choice_screen():
+    """Render the initial choice between customized or general bot"""
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="color: #FFFFFF; font-size: 1.75rem; margin-bottom: 0.5rem;">Welcome to EmoSense Companion</h2>
+        <p style="color: #9CA3AF; font-size: 1rem;">How would you like to experience your AI companion?</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Hero
-    gradient_hero(
-        "💜 EmoSense Companion",
-        "Your emotionally intelligent AI friend. Type or talk — I'll understand."
-    )
+    col1, col2 = st.columns(2)
     
-    # Settings row
-    col_settings1, col_settings2, col_settings3 = st.columns([2, 2, 1])
+    with col1:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.15) 100%);
+                    border: 2px solid rgba(139, 92, 246, 0.4); border-radius: 20px; padding: 2rem; text-align: center;
+                    min-height: 280px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🎭</div>
+            <div style="color: #FFFFFF; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.75rem;">Personalized Companion</div>
+            <div style="color: #C4B5FD; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem;">
+                Answer a brief questionnaire about how you cope with stress. 
+                We'll create a persona tailored to your unique style.
+            </div>
+            <div style="color: #9CA3AF; font-size: 0.8rem;">
+                ⏱️ Takes about 3-5 minutes
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("✨ Customize My Experience", type="primary", use_container_width=True, key="choose_customized"):
+            st.session_state.customization_choice = "customized"
+            st.session_state.companion_mode = "onboarding"
+            st.rerun()
     
-    with col_settings1:
-        mode = st.selectbox(
-            "🎭 Conversation Mode",
-            ["Casual Chat", "Comfort Me", "Help Me Reflect", "Hype Me Up", "Just Listen"],
-            key="mode_selector"
+    with col2:
+        st.markdown("""
+        <div style="background: rgba(17, 24, 39, 0.6); border: 2px solid rgba(107, 114, 128, 0.4);
+                    border-radius: 20px; padding: 2rem; text-align: center; min-height: 280px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+            <div style="color: #FFFFFF; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.75rem;">General Companion</div>
+            <div style="color: #9CA3AF; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem;">
+                Start chatting right away with our friendly AI companion. 
+                You can manually choose personality and mode.
+            </div>
+            <div style="color: #6B7280; font-size: 0.8rem;">
+                ⚡ Start immediately
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("💬 Start General Chat", use_container_width=True, key="choose_general"):
+            st.session_state.customization_choice = "general"
+            st.session_state.companion_mode = "chat"
+            st.rerun()
+
+
+def render_onboarding():
+    """Render the COPE questionnaire onboarding flow"""
+    total_questions = len(COPE_QUESTIONS)
+    questions_answered = len(st.session_state.cope_answers)
+    
+    # Progress bar
+    progress = questions_answered / total_questions
+    st.markdown(f"""
+    <div style="background: rgba(17, 24, 39, 0.6); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;
+                border: 1px solid rgba(138, 92, 246, 0.2);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="color: #C4B5FD; font-weight: 600;">Coping Style Assessment</span>
+            <span style="color: #9CA3AF;">{questions_answered} / {total_questions}</span>
+        </div>
+        <div style="background: rgba(138, 92, 246, 0.2); border-radius: 8px; height: 8px; overflow: hidden;">
+            <div style="background: linear-gradient(90deg, #667EEA 0%, #8B5CF6 50%, #EC4899 100%);
+                        height: 100%; width: {progress * 100}%; transition: width 0.3s ease;"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Response options
+    option_labels = ["Not at all", "A little bit", "Medium amount", "A lot"]
+    
+    # Show 4 questions per page
+    questions_per_page = 4
+    total_pages = (total_questions + questions_per_page - 1) // questions_per_page
+    current_page = st.session_state.onboarding_page
+    
+    start_idx = current_page * questions_per_page
+    end_idx = min(start_idx + questions_per_page, total_questions)
+    
+    st.markdown(f"""
+    <div style="color: #9CA3AF; font-size: 0.85rem; margin-bottom: 1rem; text-align: center;">
+        Think about how you typically handle stress and challenges.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Render current page questions
+    for i in range(start_idx, end_idx):
+        q = COPE_QUESTIONS[i]
+        qid = q["id"]
+        
+        st.markdown(f"""
+        <div style="background: rgba(17, 24, 39, 0.5); border: 1px solid rgba(138, 92, 246, 0.15);
+                    border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem;">
+            <div style="color: #8B5CF6; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;">
+                Question {i + 1}
+            </div>
+            <div style="color: #E5E7EB; font-size: 0.95rem; line-height: 1.5;">
+                {q['text']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        current_answer = st.session_state.cope_answers.get(qid)
+        current_index = current_answer - 1 if current_answer else None
+        
+        answer = st.radio(
+            f"Answer for Q{i+1}",
+            options=option_labels,
+            index=current_index,
+            horizontal=True,
+            label_visibility="collapsed",
+            key=f"cope_{qid}"
         )
-        st.session_state.conversation_mode = mode
+        
+        if answer:
+            score = option_labels.index(answer) + 1
+            st.session_state.cope_answers[qid] = score
     
-    with col_settings2:
-        personality = st.selectbox(
-            "✨ Companion Personality",
-            ["Friendly", "Calm", "Big Sister", "Funny", "Deep Thinker"],
-            key="personality_selector"
-        )
-        st.session_state.bot_personality = personality
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    with col_settings3:
-        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-        show_emotions = st.checkbox("Show emotions", value=st.session_state.show_emotion_analysis)
-        st.session_state.show_emotion_analysis = show_emotions
+    # Navigation
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if current_page > 0:
+            if st.button("← Previous", use_container_width=True):
+                st.session_state.onboarding_page -= 1
+                st.rerun()
+    
+    with col2:
+        current_page_qids = [COPE_QUESTIONS[i]["id"] for i in range(start_idx, end_idx)]
+        all_current_answered = all(qid in st.session_state.cope_answers for qid in current_page_qids)
+        
+        if current_page < total_pages - 1:
+            if st.button("Next →", type="primary", use_container_width=True, disabled=not all_current_answered):
+                st.session_state.onboarding_page += 1
+                st.rerun()
+        else:
+            # Final page - complete button
+            all_answered = len(st.session_state.cope_answers) == total_questions
+            if st.button("✓ Complete & Get My Persona", type="primary", use_container_width=True, disabled=not all_answered):
+                # Compute scores and assign persona
+                scores = compute_cope_scores(st.session_state.cope_answers, COPE_QUESTIONS)
+                st.session_state.cope_scores = scores
+                
+                persona_name, persona_info = assign_persona(scores)
+                st.session_state.persona = persona_name
+                st.session_state.persona_info = persona_info
+                
+                # Apply personality mapping
+                mapped_personality = PERSONA_TO_PERSONALITY.get(persona_name, "Friendly")
+                st.session_state.bot_personality = mapped_personality
+                
+                # Move to chat
+                st.session_state.companion_mode = "chat"
+                st.rerun()
+    
+    with col3:
+        if st.button("Skip →", use_container_width=True, help="Skip to general chat"):
+            st.session_state.customization_choice = "general"
+            st.session_state.companion_mode = "chat"
+            st.session_state.cope_answers = {}
+            st.session_state.onboarding_page = 0
+            st.rerun()
+
+
+def render_persona_banner():
+    """Show persona banner if customization was completed"""
+    if st.session_state.customization_choice == "customized" and st.session_state.persona:
+        persona = st.session_state.persona
+        persona_meta = get_persona_metadata(persona)
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+                    border: 1px solid rgba(138, 92, 246, 0.3); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;
+                    display: flex; align-items: center; gap: 1rem;">
+            <span style="font-size: 2rem;">{persona_meta.get('emoji', '💜')}</span>
+            <div>
+                <div style="color: #FFFFFF; font-weight: 600;">{persona}</div>
+                <div style="color: #9CA3AF; font-size: 0.85rem;">{persona_meta.get('short_desc', '')}</div>
+            </div>
+            <div style="margin-left: auto;">
+                <span style="background: rgba(16, 185, 129, 0.2); color: #6EE7B7; padding: 0.25rem 0.75rem;
+                            border-radius: 12px; font-size: 0.75rem;">Personalized</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+def render_chat_ui():
+    """Render the main chat interface"""
+    # Show persona banner if customized
+    render_persona_banner()
+    
+    # Settings row - only show personality selector if NOT customized
+    if st.session_state.customization_choice != "customized":
+        col_settings1, col_settings2, col_settings3 = st.columns([2, 2, 1])
+        
+        with col_settings1:
+            mode = st.selectbox(
+                "🎭 Conversation Mode",
+                ["Casual Chat", "Comfort Me", "Help Me Reflect", "Hype Me Up", "Just Listen"],
+                key="mode_selector"
+            )
+            st.session_state.conversation_mode = mode
+        
+        with col_settings2:
+            personality = st.selectbox(
+                "✨ Companion Personality",
+                ["Friendly", "Calm", "Big Sister", "Funny", "Deep Thinker"],
+                key="personality_selector"
+            )
+            st.session_state.bot_personality = personality
+        
+        with col_settings3:
+            st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+            show_emotions = st.checkbox("Show emotions", value=st.session_state.show_emotion_analysis)
+            st.session_state.show_emotion_analysis = show_emotions
+    else:
+        # Just show mode selector for customized users
+        col_settings1, col_settings2 = st.columns([3, 1])
+        
+        with col_settings1:
+            mode = st.selectbox(
+                "🎭 Conversation Mode",
+                ["Casual Chat", "Comfort Me", "Help Me Reflect", "Hype Me Up", "Just Listen"],
+                key="mode_selector"
+            )
+            st.session_state.conversation_mode = mode
+        
+        with col_settings2:
+            st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+            show_emotions = st.checkbox("Show emotions", value=st.session_state.show_emotion_analysis)
+            st.session_state.show_emotion_analysis = show_emotions
     
     spacer("sm")
     
@@ -569,8 +824,8 @@ with page_container():
     
     st.markdown(f"""
     <div class="glass-card" style="padding: 0.75rem 1.25rem; margin-bottom: 1rem;">
-        <span class="mode-badge">{mode}</span>
-        <span style="color: #9CA3AF; font-size: 0.875rem;">{mode_descriptions.get(mode, '')}</span>
+        <span class="mode-badge">{st.session_state.conversation_mode}</span>
+        <span style="color: #9CA3AF; font-size: 0.875rem;">{mode_descriptions.get(st.session_state.conversation_mode, '')}</span>
     </div>
     """, unsafe_allow_html=True)
     
@@ -585,7 +840,6 @@ with page_container():
     col_input, col_mic, col_buttons = st.columns([3.5, 0.5, 1])
     
     with col_input:
-        # Clear input after message is sent
         if "user_message_input" not in st.session_state:
             st.session_state.user_message_input = ""
         
@@ -604,7 +858,6 @@ with page_container():
     
     with col_mic:
         st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-        # Voice input - mic button
         audio_input = st.audio_input(
             "🎙️",
             key="inline_voice_input",
@@ -618,7 +871,6 @@ with page_container():
         
         if st.button("🔍 Analyze", help="Explicitly analyze emotions in your message"):
             if user_input.strip():
-                # Force emotion analysis
                 with st.spinner("Understanding your emotions..."):
                     predicted_emotions, probabilities = predict_emotions(user_input, threshold=0.3)
                     
@@ -636,38 +888,23 @@ with page_container():
                         else:
                             reflection = "Your message feels emotionally balanced. 🌟"
                     
-                    # Add to history
                     timestamp = datetime.datetime.now().strftime("%I:%M %p")
-                    emotion_context = {
-                        "emotions": predicted_emotions,
-                        "probabilities": probabilities
-                    }
+                    emotion_context = {"emotions": predicted_emotions, "probabilities": probabilities}
                     
                     st.session_state.chat_history.append({
-                        "role": "user",
-                        "content": user_input,
-                        "timestamp": timestamp,
-                        "emotion_data": emotion_context
+                        "role": "user", "content": user_input, "timestamp": timestamp, "emotion_data": emotion_context
                     })
-                    
                     st.session_state.chat_history.append({
-                        "role": "assistant",
-                        "content": reflection,
-                        "timestamp": timestamp
+                        "role": "assistant", "content": reflection, "timestamp": timestamp
                     })
-                    
                     st.session_state.chat_history = st.session_state.chat_history[-20:]
                     
-                    # Store emotion data
                     st.session_state.emotion_history.append({
-                        "timestamp": datetime.datetime.now(),
-                        "emotions": predicted_emotions,
-                        "probabilities": probabilities,
-                        "message": user_input
+                        "timestamp": datetime.datetime.now(), "emotions": predicted_emotions,
+                        "probabilities": probabilities, "message": user_input
                     })
                     st.session_state.emotion_history = st.session_state.emotion_history[-10:]
                     
-                    # Clear input box
                     st.session_state.clear_input = True
                     st.rerun()
         
@@ -678,11 +915,9 @@ with page_container():
             st.session_state.clear_input = True
             st.rerun()
     
-    # Handle text send button
+    # Handle text send
     if send_button and user_input.strip():
-        # Store the input before clearing
         message_to_send = user_input
-        # Clear the input immediately
         st.session_state.user_message_input = ""
         st.session_state.clear_input = True
         
@@ -690,32 +925,26 @@ with page_container():
             handle_user_message(message_to_send)
         st.rerun()
     
-    # Handle voice input (from mic button)
+    # Handle voice input
     if audio_input is not None:
-        # Read audio bytes and create a hash to track if it's new audio
         audio_bytes = audio_input.read()
-        audio_hash = hash(audio_bytes)
+        audio_hash = hashlib.md5(audio_bytes).hexdigest()
         
-        # Only process if this is new audio (different from last processed)
         if audio_hash != st.session_state.last_audio_hash and len(audio_bytes) > 0:
             st.session_state.last_audio_hash = audio_hash
             
             if voice_service:
                 try:
                     with st.spinner("🎙️ Transcribing your voice..."):
-                        # Transcribe audio to text
                         user_text = voice_service.speech_to_text(audio_bytes)
                     
                     if user_text.strip():
                         st.success(f"📝 You said: \"{user_text}\"")
                         
-                        # Process the transcribed text as a regular message
                         with st.spinner("💭 Thinking..."):
                             handle_user_message(user_text)
                         
-                        # Generate TTS for the bot's response
                         with st.spinner("🔊 Generating voice response..."):
-                            # Get the last bot response
                             if st.session_state.chat_history:
                                 last_response = st.session_state.chat_history[-1]["content"]
                                 tts_audio = voice_service.text_to_speech(last_response)
@@ -730,13 +959,29 @@ with page_container():
             else:
                 st.error("🔑 Voice service unavailable. Please configure OPENAI_API_KEY.")
     
-    # Auto-play TTS audio if available
+    # Auto-play TTS
     if st.session_state.pending_tts_audio is not None:
         st.audio(st.session_state.pending_tts_audio, format="audio/mp3", autoplay=True)
-        # Clear after playing
         st.session_state.pending_tts_audio = None
     
     spacer("md")
+    
+    # Reset option
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🔄 Start Over (New Persona)", use_container_width=True):
+            # Reset onboarding state
+            st.session_state.companion_mode = "choice"
+            st.session_state.customization_choice = None
+            st.session_state.cope_answers = {}
+            st.session_state.cope_scores = {}
+            st.session_state.persona = None
+            st.session_state.persona_info = None
+            st.session_state.onboarding_page = 0
+            st.session_state.chat_history = []
+            st.session_state.emotion_history = []
+            st.session_state.bot_personality = "Friendly"
+            st.rerun()
     
     # Safety reminder
     st.markdown("""
@@ -748,6 +993,32 @@ with page_container():
         </p>
     </div>
     """, unsafe_allow_html=True)
+
+
+# ============================================================
+# MAIN UI LAYOUT - STATE MACHINE ROUTER
+# ============================================================
+
+with page_container():
+    st.markdown('<div class="page-wrapper">', unsafe_allow_html=True)
+    
+    # Hero
+    gradient_hero(
+        "💜 EmoSense Companion",
+        "Your emotionally intelligent AI friend. Type or talk — I'll understand."
+    )
+    
+    # Route based on companion mode
+    if st.session_state.companion_mode == "choice":
+        render_choice_screen()
+    elif st.session_state.companion_mode == "onboarding":
+        render_onboarding()
+    elif st.session_state.companion_mode == "chat":
+        render_chat_ui()
+    else:
+        # Default to choice
+        st.session_state.companion_mode = "choice"
+        st.rerun()
     
     spacer("lg")
     st.markdown('</div>', unsafe_allow_html=True)
