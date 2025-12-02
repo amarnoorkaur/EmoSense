@@ -1,9 +1,15 @@
 """
 Personal LLM Service for EmoSense Companion
 Handles emotion-aware conversational AI using GPT-4o-mini
+
+Enhanced with:
+- Linguistic Style Matching (LSM) - mirrors user's communication style
+- COPE-based coping strategy integration - natural strategy suggestions
+- Emotion-aware tone adaptation
 """
 
 import os
+import re
 from typing import List, Dict, Optional, Tuple
 from openai import OpenAI
 import streamlit as st
@@ -13,6 +19,11 @@ class PersonalLLMService:
     """
     Manages emotionally intelligent conversations for Personal Chatbot.
     Integrates BERT emotion detection with GPT-4o-mini for natural dialogue.
+    
+    Features:
+    - Linguistic Style Matching (LSM): Mirrors user's communication style
+    - COPE Strategy Integration: Natural coping suggestions without clinical terms
+    - Emotion-aware tone adaptation
     """
     
     # Crisis/distress keywords that trigger emotion analysis
@@ -31,6 +42,68 @@ class PersonalLLMService:
         "better off dead", "no point living", "want to disappear",
         "hurt myself", "self harm"
     ]
+    
+    # Slang indicators for style detection
+    SLANG_PATTERNS = [
+        r'\b(bro|bruh|dude|lol|lmao|omg|wtf|idk|idek|tbh|ngl|fr|frfr|imo|rn|lowkey|highkey|vibe|vibes|sus|slay|bet|fam|deadass|no cap|cap|bussin|fire|lit|mood|same|valid|snatched|periodt|sis|bestie|girlie|tea|spill|salty|shook|iconic|stan|simp|flex|glow up|big yikes|yikes|oof|yeet|based|cringe|goat|goated|hits different|rent free|main character|understood the assignment|it\'s giving|ate that|left no crumbs)\b',
+        r'\b(gonna|wanna|gotta|kinda|sorta|dunno|ain\'t|y\'all|imma|lemme|gimme|whatcha|gotcha|ya|yea|yeah|yep|nah|nope)\b'
+    ]
+    
+    # Common emojis for detection
+    EMOJI_PATTERN = re.compile(
+        "["
+        "\U0001F600-\U0001F64F"  # emoticons
+        "\U0001F300-\U0001F5FF"  # symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # transport & map symbols
+        "\U0001F1E0-\U0001F1FF"  # flags
+        "\U00002702-\U000027B0"  # dingbats
+        "\U000024C2-\U0001F251"  # enclosed characters
+        "\U0001F900-\U0001F9FF"  # supplemental symbols
+        "\U0001FA00-\U0001FA6F"  # chess symbols
+        "\U0001FA70-\U0001FAFF"  # symbols and pictographs extended-A
+        "\U00002600-\U000026FF"  # misc symbols
+        "]+", 
+        flags=re.UNICODE
+    )
+    
+    # COPE strategy natural translations (never mention "COPE" or strategy names)
+    COPE_STRATEGY_TRANSLATIONS = {
+        # Problem-focused strategies
+        "active_coping": "Let's break this down together and find one small step you can take right now.",
+        "planning": "It might help to map out a simple plan. What feels like the first thing to tackle?",
+        "instrumental_support": "It's okay to ask for help. Is there someone in your life who could support you with this?",
+        
+        # Emotion-focused strategies
+        "emotional_support": "It makes total sense to feel this way. You don't have to carry this alone.",
+        "positive_reframing": "Even in tough moments, there can be a silver lining. What's one small thing that's still going okay?",
+        "acceptance": "Sometimes the bravest thing is accepting what we can't change. How do you feel about that?",
+        "humor": "Sometimes a little lightness can help. What usually makes you smile, even a tiny bit?",
+        "religion": "If it feels right for you, connecting to something bigger can bring comfort. What grounds you?",
+        
+        # Avoidant strategies (redirect gently)
+        "denial": "It's natural to want to push this away, but I'm here when you're ready to talk.",
+        "behavioral_disengagement": "I get wanting to disconnect, but let's try to stay present together for a moment.",
+        "self_distraction": "Taking a break is totally valid. What helps you reset when things get heavy?",
+        "substance_use": "Looking for relief makes sense, but let's explore some other ways to feel better that won't have downsides.",
+        
+        # Expression strategies
+        "venting": "Let it out — I'm listening. You don't need to hold this in.",
+        "self_blame": "Hey, be gentle with yourself. This isn't all on you. What happened?"
+    }
+    
+    # Tone indicators and their response approaches
+    TONE_RESPONSES = {
+        "sad": "respond gently and with compassion, validate their pain",
+        "stressed": "acknowledge the overwhelm, offer grounding and small steps",
+        "confused": "provide clarity and reassurance, break things down simply",
+        "angry": "validate the frustration, don't minimize, give space",
+        "hopeful": "encourage and nurture the optimism, build momentum",
+        "overwhelmed": "slow down, simplify, focus on one thing at a time",
+        "anxious": "be calming, grounding, reassuring presence",
+        "lonely": "be warm and present, emphasize connection",
+        "frustrated": "acknowledge the struggle, validate without pushing solutions",
+        "numb": "be gently present, don't force emotion, stay patient"
+    }
     
     def __init__(self, api_key: Optional[str] = None):
         """
@@ -52,6 +125,226 @@ class PersonalLLMService:
         
         self.client = OpenAI(api_key=self.api_key)
         self.model = "gpt-4o-mini"
+    
+    def analyze_user_style(self, message: str) -> Dict[str, str]:
+        """
+        Analyze user's communication style for Linguistic Style Matching (LSM).
+        Creates a style profile to mirror in responses.
+        
+        Args:
+            message: User's message text
+            
+        Returns:
+            Style profile dictionary with formality, emotion intensity, etc.
+        """
+        message_lower = message.lower()
+        words = message.split()
+        word_count = len(words)
+        
+        # 1. Detect formality level
+        formal_indicators = ["please", "thank you", "would you", "could you", "i would", "perhaps", "however", "therefore"]
+        casual_indicators = ["hey", "yo", "lol", "haha", "yeah", "yea", "nah", "cool", "ok", "okay", "k", "gonna", "wanna"]
+        
+        formal_count = sum(1 for ind in formal_indicators if ind in message_lower)
+        casual_count = sum(1 for ind in casual_indicators if ind in message_lower)
+        
+        if formal_count > casual_count:
+            formality = "formal"
+        elif casual_count > formal_count:
+            formality = "casual"
+        else:
+            formality = "neutral"
+        
+        # 2. Detect emoji usage
+        emojis = self.EMOJI_PATTERN.findall(message)
+        emoji_count = len(emojis)
+        
+        if emoji_count == 0:
+            emoji_level = "none"
+        elif emoji_count <= 2:
+            emoji_level = "low"
+        elif emoji_count <= 4:
+            emoji_level = "medium"
+        else:
+            emoji_level = "high"
+        
+        # 3. Detect slang usage
+        slang_count = 0
+        for pattern in self.SLANG_PATTERNS:
+            slang_count += len(re.findall(pattern, message_lower))
+        
+        if slang_count == 0:
+            slang_level = "none"
+        elif slang_count <= 2:
+            slang_level = "low"
+        else:
+            slang_level = "high"
+        
+        # 4. Detect message length preference
+        if word_count <= 10:
+            length = "short"
+        elif word_count <= 30:
+            length = "medium"
+        else:
+            length = "long"
+        
+        # 5. Detect emotional intensity
+        intensity_markers = ["!!", "!!!", "???", "...", "omg", "so much", "really", "extremely", "super", "absolutely", "completely", "totally"]
+        caps_ratio = sum(1 for c in message if c.isupper()) / max(len(message), 1)
+        intensity_count = sum(1 for marker in intensity_markers if marker in message_lower)
+        
+        if intensity_count >= 2 or caps_ratio > 0.3:
+            emotion_intensity = "high"
+        elif intensity_count >= 1 or "!" in message:
+            emotion_intensity = "medium"
+        else:
+            emotion_intensity = "low"
+        
+        # 6. Detect tone indicators
+        tone = self._detect_tone(message_lower)
+        
+        return {
+            "formality": formality,
+            "emotion_intensity": emotion_intensity,
+            "emoji_level": emoji_level,
+            "slang_level": slang_level,
+            "length": length,
+            "tone": tone
+        }
+    
+    def _detect_tone(self, message_lower: str) -> str:
+        """
+        Detect emotional tone from message content.
+        
+        Args:
+            message_lower: Lowercase message text
+            
+        Returns:
+            Detected tone string
+        """
+        tone_keywords = {
+            "sad": ["sad", "crying", "tears", "miss", "lost", "grief", "hurts", "heartbroken", "depressed", "down"],
+            "stressed": ["stressed", "pressure", "deadline", "too much", "can't handle", "breaking", "burnout", "overwhelmed"],
+            "confused": ["confused", "don't know", "idk", "idek", "unsure", "lost", "what do i", "help me understand", "makes no sense"],
+            "angry": ["angry", "mad", "pissed", "furious", "hate", "frustrated", "annoyed", "sick of", "fed up"],
+            "hopeful": ["hope", "maybe", "could be", "looking forward", "excited", "optimistic", "positive"],
+            "overwhelmed": ["too much", "can't cope", "drowning", "overwhelmed", "everything at once", "so much"],
+            "anxious": ["anxious", "worried", "nervous", "scared", "fear", "panic", "what if", "can't stop thinking"],
+            "lonely": ["lonely", "alone", "no one", "nobody", "isolated", "miss people", "by myself"],
+            "frustrated": ["frustrated", "stuck", "going nowhere", "nothing works", "tried everything"],
+            "numb": ["numb", "empty", "nothing", "don't feel", "blank", "disconnected"]
+        }
+        
+        for tone, keywords in tone_keywords.items():
+            if any(kw in message_lower for kw in keywords):
+                return tone
+        
+        return "neutral"
+    
+    def get_cope_suggestion(self, emotion_context: Optional[Dict] = None, persona: Optional[str] = None) -> Optional[str]:
+        """
+        Get a natural COPE-based suggestion based on detected emotions and persona.
+        
+        Args:
+            emotion_context: Detected emotions from BERT
+            persona: User's assigned persona (if any)
+            
+        Returns:
+            Natural language coping suggestion or None
+        """
+        if not emotion_context or not emotion_context.get("emotions"):
+            return None
+        
+        emotions = emotion_context["emotions"]
+        probs = emotion_context.get("probabilities", {})
+        
+        # Map emotions to likely COPE strategies
+        emotion_to_strategy = {
+            "sadness": ["emotional_support", "acceptance", "positive_reframing"],
+            "anxiety": ["active_coping", "emotional_support", "self_distraction"],
+            "fear": ["emotional_support", "planning", "acceptance"],
+            "anger": ["venting", "acceptance", "self_distraction"],
+            "joy": ["positive_reframing", "humor"],
+            "love": ["emotional_support", "acceptance"],
+            "surprise": ["acceptance", "active_coping"],
+            "disgust": ["venting", "self_distraction"],
+            "neutral": ["active_coping", "planning"]
+        }
+        
+        # Get dominant emotion
+        if emotions:
+            dominant = emotions[0].lower()
+            strategies = emotion_to_strategy.get(dominant, ["emotional_support"])
+            
+            # Pick first strategy and get its natural translation
+            strategy = strategies[0]
+            return self.COPE_STRATEGY_TRANSLATIONS.get(strategy)
+        
+        return None
+    
+    def build_style_matching_instructions(self, style_profile: Dict[str, str]) -> str:
+        """
+        Build instructions for the LLM to match user's style.
+        
+        Args:
+            style_profile: Analyzed style profile
+            
+        Returns:
+            Style matching instructions for system prompt
+        """
+        instructions = "\n\n**LINGUISTIC STYLE MATCHING INSTRUCTIONS:**\n"
+        instructions += "Mirror the user's communication style based on this profile (DO NOT reveal this analysis to user):\n"
+        
+        # Formality matching
+        if style_profile["formality"] == "casual":
+            instructions += "- Use casual, relaxed language. Contractions allowed. Be conversational.\n"
+        elif style_profile["formality"] == "formal":
+            instructions += "- Use clear, respectful language. Avoid excessive slang. Be articulate.\n"
+        else:
+            instructions += "- Use balanced, natural language. Be warm but not overly casual.\n"
+        
+        # Emoji matching
+        if style_profile["emoji_level"] == "none":
+            instructions += "- Do NOT use emojis.\n"
+        elif style_profile["emoji_level"] == "low":
+            instructions += "- Use 1 emoji maximum, naturally placed.\n"
+        elif style_profile["emoji_level"] == "medium":
+            instructions += "- Use 2-3 emojis naturally throughout response.\n"
+        else:
+            instructions += "- Use 3-4 emojis to match their expressive style.\n"
+        
+        # Slang matching
+        if style_profile["slang_level"] == "high":
+            instructions += "- You can use casual slang (bro, tbh, fr, etc.) to match their vibe.\n"
+        elif style_profile["slang_level"] == "low":
+            instructions += "- Use minimal casual expressions. Stay mostly standard.\n"
+        else:
+            instructions += "- Avoid slang. Keep language clean and accessible.\n"
+        
+        # Length matching
+        if style_profile["length"] == "short":
+            instructions += "- Keep response SHORT (2-3 sentences max). Be concise.\n"
+        elif style_profile["length"] == "long":
+            instructions += "- You can give a fuller response (4-5 sentences). Match their depth.\n"
+        else:
+            instructions += "- Medium length response (3-4 sentences). Balanced.\n"
+        
+        # Emotion intensity matching
+        if style_profile["emotion_intensity"] == "high":
+            instructions += "- Match their emotional energy. Be expressive and warm.\n"
+        elif style_profile["emotion_intensity"] == "low":
+            instructions += "- Keep tone calm and measured. Don't be overly enthusiastic.\n"
+        else:
+            instructions += "- Moderate emotional expression. Warm but grounded.\n"
+        
+        # Tone-specific response guidance
+        tone = style_profile["tone"]
+        if tone in self.TONE_RESPONSES:
+            instructions += f"- Tone detected: {tone}. Response approach: {self.TONE_RESPONSES[tone]}\n"
+        
+        instructions += "\nNEVER mention that you're matching their style. Just do it naturally."
+        
+        return instructions
     
     def detect_distress(self, message: str) -> bool:
         """
@@ -99,14 +392,23 @@ You don't have to face this alone. These services are available 24/7, and the pe
 
 Would you be willing to reach out to one of these resources? I'm here to listen, but I want to make sure you have the professional support you deserve right now. 💜"""
     
-    def get_system_prompt(self, mode: str, personality: str, emotion_context: Optional[Dict] = None) -> str:
+    def get_system_prompt(
+        self, 
+        mode: str, 
+        personality: str, 
+        emotion_context: Optional[Dict] = None,
+        style_profile: Optional[Dict[str, str]] = None,
+        cope_suggestion: Optional[str] = None
+    ) -> str:
         """
-        Generate system prompt based on conversation mode and personality
+        Generate system prompt based on conversation mode, personality, and style matching.
         
         Args:
             mode: Conversation mode (Casual Chat, Comfort Me, etc.)
             personality: Bot personality (Calm, Big Sister, etc.)
             emotion_context: Current emotional state from BERT
+            style_profile: User's communication style profile for LSM
+            cope_suggestion: Natural COPE-based coping suggestion
             
         Returns:
             Customized system prompt
@@ -201,6 +503,22 @@ Would you be willing to reach out to one of these resources? I'm here to listen,
 
 **Remember:** You're having a genuine conversation with someone who trusts you. Be real, be present, be human."""
         
+        # Add style matching instructions if profile provided
+        if style_profile:
+            system_prompt += self.build_style_matching_instructions(style_profile)
+        
+        # Add COPE suggestion integration (natural, never clinical)
+        if cope_suggestion:
+            system_prompt += f"""
+
+**COPING SUPPORT INTEGRATION:**
+Consider weaving this supportive approach into your response NATURALLY:
+"{cope_suggestion}"
+- Do NOT mention "coping strategies", "COPE", "technique", or clinical terms.
+- Translate this into warm, human language that fits the conversation.
+- Make it feel like natural advice from a caring friend, not a therapist.
+- Only include if it fits naturally — don't force it."""
+        
         return system_prompt
     
     def format_chat_history(self, chat_history: List[Dict]) -> List[Dict]:
@@ -269,10 +587,11 @@ Would you be willing to reach out to one of these resources? I'm here to listen,
         mode: str = "Casual Chat",
         personality: str = "Friendly",
         emotion_context: Optional[Dict] = None,
-        emotion_trend: Optional[str] = None
+        emotion_trend: Optional[str] = None,
+        persona: Optional[str] = None
     ) -> str:
         """
-        Generate emotionally aware conversational response
+        Generate emotionally aware conversational response with Linguistic Style Matching.
         
         Args:
             user_message: Current user message
@@ -281,13 +600,26 @@ Would you be willing to reach out to one of these resources? I'm here to listen,
             personality: Bot personality
             emotion_context: Current emotions from BERT (optional)
             emotion_trend: Detected emotional trend (optional)
+            persona: User's COPE-assigned persona (optional)
             
         Returns:
-            AI-generated response
+            AI-generated response matching user's style
         """
         try:
-            # Build system prompt
-            system_prompt = self.get_system_prompt(mode, personality, emotion_context)
+            # 1. Analyze user's communication style for LSM
+            style_profile = self.analyze_user_style(user_message)
+            
+            # 2. Get natural COPE suggestion based on emotions
+            cope_suggestion = self.get_cope_suggestion(emotion_context, persona)
+            
+            # 3. Build system prompt with style matching
+            system_prompt = self.get_system_prompt(
+                mode=mode, 
+                personality=personality, 
+                emotion_context=emotion_context,
+                style_profile=style_profile,
+                cope_suggestion=cope_suggestion
+            )
             
             # Add trend context if available
             if emotion_trend == "rising_stress":
