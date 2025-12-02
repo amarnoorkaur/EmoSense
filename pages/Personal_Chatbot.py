@@ -124,11 +124,6 @@ if st.session_state.persona and st.session_state.customization_choice == "custom
     )
     if st.session_state.bot_personality != mapped_personality:
         st.session_state.bot_personality = mapped_personality
-        st.session_state.persona, 
-        st.session_state.bot_personality
-    )
-    if st.session_state.bot_personality != mapped_personality:
-        st.session_state.bot_personality = mapped_personality
 
 # Custom CSS for chat interface
 st.markdown("""
