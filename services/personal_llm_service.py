@@ -6,6 +6,7 @@ Enhanced with:
 - Linguistic Style Matching (LSM) - mirrors user's communication style
 - COPE-based coping strategy integration - natural strategy suggestions
 - Emotion-aware tone adaptation
+- Big Five Personality Adaptation (Mini-IPIP) - adapts tone to personality
 """
 
 import os
@@ -13,6 +14,14 @@ import re
 from typing import List, Dict, Optional, Tuple
 from openai import OpenAI
 import streamlit as st
+
+# Import Big Five adaptation
+try:
+    from services.big_five_service import get_personality_adaptation_prompt, get_trait_level
+except ImportError:
+    # Fallback for import path issues
+    get_personality_adaptation_prompt = None
+    get_trait_level = None
 
 
 class PersonalLLMService:
@@ -24,6 +33,7 @@ class PersonalLLMService:
     - Linguistic Style Matching (LSM): Mirrors user's communication style
     - COPE Strategy Integration: Natural coping suggestions without clinical terms
     - Emotion-aware tone adaptation
+    - Big Five Personality Adaptation: Adjusts tone based on personality profile
     """
     
     # Crisis/distress keywords that trigger emotion analysis
@@ -398,10 +408,11 @@ Would you be willing to reach out to one of these resources? I'm here to listen,
         personality: str, 
         emotion_context: Optional[Dict] = None,
         style_profile: Optional[Dict[str, str]] = None,
-        cope_suggestion: Optional[str] = None
+        cope_suggestion: Optional[str] = None,
+        big_five_scores: Optional[Dict[str, float]] = None
     ) -> str:
         """
-        Generate system prompt based on conversation mode, personality, and style matching.
+        Generate system prompt based on conversation mode, personality, style matching, and Big Five.
         
         Args:
             mode: Conversation mode (Casual Chat, Comfort Me, etc.)
@@ -409,6 +420,7 @@ Would you be willing to reach out to one of these resources? I'm here to listen,
             emotion_context: Current emotional state from BERT
             style_profile: User's communication style profile for LSM
             cope_suggestion: Natural COPE-based coping suggestion
+            big_five_scores: User's Big Five personality scores (optional)
             
         Returns:
             Customized system prompt
@@ -503,6 +515,10 @@ Would you be willing to reach out to one of these resources? I'm here to listen,
 
 **Remember:** You're having a genuine conversation with someone who trusts you. Be real, be present, be human."""
         
+        # Add Big Five personality adaptation if scores provided
+        if big_five_scores and get_personality_adaptation_prompt:
+            system_prompt += get_personality_adaptation_prompt(big_five_scores)
+        
         # Add style matching instructions if profile provided
         if style_profile:
             system_prompt += self.build_style_matching_instructions(style_profile)
@@ -588,10 +604,17 @@ Consider weaving this supportive approach into your response NATURALLY:
         personality: str = "Friendly",
         emotion_context: Optional[Dict] = None,
         emotion_trend: Optional[str] = None,
-        persona: Optional[str] = None
+        persona: Optional[str] = None,
+        big_five_scores: Optional[Dict[str, float]] = None
     ) -> str:
         """
-        Generate emotionally aware conversational response with Linguistic Style Matching.
+        Generate emotionally aware conversational response with full adaptive personality.
+        
+        Combines 4 layers:
+        1. Big Five Personality adaptation (if scores provided)
+        2. COPE-based coping strategy suggestions
+        3. Linguistic Style Matching (LSM)
+        4. Emotion intensity from classifier
         
         Args:
             user_message: Current user message
@@ -601,9 +624,10 @@ Consider weaving this supportive approach into your response NATURALLY:
             emotion_context: Current emotions from BERT (optional)
             emotion_trend: Detected emotional trend (optional)
             persona: User's COPE-assigned persona (optional)
+            big_five_scores: User's Big Five personality scores (optional)
             
         Returns:
-            AI-generated response matching user's style
+            AI-generated response matching user's style and personality
         """
         try:
             # 1. Analyze user's communication style for LSM
@@ -612,13 +636,14 @@ Consider weaving this supportive approach into your response NATURALLY:
             # 2. Get natural COPE suggestion based on emotions
             cope_suggestion = self.get_cope_suggestion(emotion_context, persona)
             
-            # 3. Build system prompt with style matching
+            # 3. Build system prompt with all 4 adaptation layers
             system_prompt = self.get_system_prompt(
                 mode=mode, 
                 personality=personality, 
                 emotion_context=emotion_context,
                 style_profile=style_profile,
-                cope_suggestion=cope_suggestion
+                cope_suggestion=cope_suggestion,
+                big_five_scores=big_five_scores
             )
             
             # Add trend context if available

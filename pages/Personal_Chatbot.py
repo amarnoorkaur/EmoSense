@@ -2,6 +2,7 @@
 Personal Emotion Companion - EmoSense AI
 Continuous, context-aware, emotionally intelligent conversational agent
 with Voice Chat support and optional COPE-based persona customization
+Enhanced with Big Five personality adaptation (Mini-IPIP-20)
 """
 import sys
 import os
@@ -25,6 +26,15 @@ from services.cope_assessment_service import (
     assign_persona
 )
 from services.persona_engine import get_persona_engine, get_persona_metadata
+from services.big_five_service import (
+    MINI_IPIP_QUESTIONS,
+    RESPONSE_OPTIONS as BIG_FIVE_OPTIONS,
+    TRAIT_INFO,
+    score_mini_ipip,
+    get_personality_summary,
+    map_big_five_to_persona,
+    get_recommended_personality
+)
 import datetime
 from typing import Optional, Dict, List, Tuple
 
@@ -44,13 +54,13 @@ voice_service = get_voice_chat_service()
 
 # Companion mode: "choice" -> "onboarding" -> "chat" OR "choice" -> "chat"
 if "companion_mode" not in st.session_state:
-    st.session_state.companion_mode = "choice"  # "choice", "onboarding", "chat"
+    st.session_state.companion_mode = "choice"  # "choice", "onboarding", "big_five", "chat"
 
-# Customization choice: None, "customized", "general"
+# Customization choice: None, "customized", "big_five", "general"
 if "customization_choice" not in st.session_state:
     st.session_state.customization_choice = None
 
-# Onboarding state
+# Onboarding state (COPE)
 if "onboarding_page" not in st.session_state:
     st.session_state.onboarding_page = 0
 
@@ -65,6 +75,19 @@ if "persona" not in st.session_state:
 
 if "persona_info" not in st.session_state:
     st.session_state.persona_info = None
+
+# Big Five personality state
+if "big_five_page" not in st.session_state:
+    st.session_state.big_five_page = 0
+
+if "big_five_answers" not in st.session_state:
+    st.session_state.big_five_answers = {}
+
+if "big_five_scores" not in st.session_state:
+    st.session_state.big_five_scores = None
+
+if "big_five_summary" not in st.session_state:
+    st.session_state.big_five_summary = None
 
 # Initialize session state for conversation memory
 if "chat_history" not in st.session_state:
@@ -531,14 +554,16 @@ def handle_user_message(user_message: str):
     if not llm_service:
         response = "I need an OpenAI API key to chat with you. Please configure OPENAI_API_KEY in your environment or Streamlit secrets. 🔑"
     else:
-        # Generate natural conversational response
+        # Generate natural conversational response with all 4 adaptation layers
         response = llm_service.generate_response(
             user_message=user_message,
             chat_history=st.session_state.chat_history,
             mode=mode,
             personality=personality,
             emotion_context=emotion_context,
-            emotion_trend=emotion_trend
+            emotion_trend=emotion_trend,
+            persona=st.session_state.persona,
+            big_five_scores=st.session_state.big_five_scores  # Pass Big Five if available
         )
     
     # Add to chat history
@@ -564,7 +589,7 @@ def handle_user_message(user_message: str):
 # ============================================================
 
 def render_choice_screen():
-    """Render the initial choice between customized or general bot"""
+    """Render the initial choice between Big Five, COPE, or general bot"""
     st.markdown("""
     <div style="text-align: center; margin-bottom: 2rem;">
         <h2 style="color: #FFFFFF; font-size: 1.75rem; margin-bottom: 0.5rem;">Welcome to EmoSense Companion</h2>
@@ -572,49 +597,196 @@ def render_choice_screen():
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         st.markdown("""
-        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.15) 100%);
-                    border: 2px solid rgba(139, 92, 246, 0.4); border-radius: 20px; padding: 2rem; text-align: center;
-                    min-height: 280px;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🎭</div>
-            <div style="color: #FFFFFF; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.75rem;">Personalized Companion</div>
-            <div style="color: #C4B5FD; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem;">
-                Answer a brief questionnaire about how you cope with stress. 
-                We'll create a persona tailored to your unique style.
+        <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
+                    border: 2px solid rgba(59, 130, 246, 0.4); border-radius: 20px; padding: 1.5rem; text-align: center;
+                    min-height: 300px;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🧠</div>
+            <div style="color: #FFFFFF; font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">Personality-Based</div>
+            <div style="color: #93C5FD; font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.75rem;">
+                Take the Big Five personality assessment (Mini-IPIP). 
+                We'll adapt to your unique personality traits.
             </div>
-            <div style="color: #9CA3AF; font-size: 0.8rem;">
-                ⏱️ Takes about 3-5 minutes
+            <div style="color: #6B7280; font-size: 0.75rem;">
+                ⏱️ 20 questions • 2-3 min
             </div>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("✨ Customize My Experience", type="primary", use_container_width=True, key="choose_customized"):
-            st.session_state.customization_choice = "customized"
-            st.session_state.companion_mode = "onboarding"
+        if st.button("🧠 Personality Assessment", type="primary", use_container_width=True, key="choose_big_five"):
+            st.session_state.customization_choice = "big_five"
+            st.session_state.companion_mode = "big_five"
             st.rerun()
     
     with col2:
         st.markdown("""
+        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.15) 100%);
+                    border: 2px solid rgba(139, 92, 246, 0.4); border-radius: 20px; padding: 1.5rem; text-align: center;
+                    min-height: 300px;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎭</div>
+            <div style="color: #FFFFFF; font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">Coping Style</div>
+            <div style="color: #C4B5FD; font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.75rem;">
+                Answer questions about how you cope with stress. 
+                We'll create a persona tailored to your coping style.
+            </div>
+            <div style="color: #6B7280; font-size: 0.75rem;">
+                ⏱️ 28 questions • 3-5 min
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🎭 COPE Assessment", use_container_width=True, key="choose_customized"):
+            st.session_state.customization_choice = "customized"
+            st.session_state.companion_mode = "onboarding"
+            st.rerun()
+    
+    with col3:
+        st.markdown("""
         <div style="background: rgba(17, 24, 39, 0.6); border: 2px solid rgba(107, 114, 128, 0.4);
-                    border-radius: 20px; padding: 2rem; text-align: center; min-height: 280px;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
-            <div style="color: #FFFFFF; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.75rem;">General Companion</div>
-            <div style="color: #9CA3AF; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem;">
+                    border-radius: 20px; padding: 1.5rem; text-align: center; min-height: 300px;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">💬</div>
+            <div style="color: #FFFFFF; font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">General Chat</div>
+            <div style="color: #9CA3AF; font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.75rem;">
                 Start chatting right away with our friendly AI companion. 
                 You can manually choose personality and mode.
             </div>
-            <div style="color: #6B7280; font-size: 0.8rem;">
+            <div style="color: #6B7280; font-size: 0.75rem;">
                 ⚡ Start immediately
             </div>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("💬 Start General Chat", use_container_width=True, key="choose_general"):
+        if st.button("💬 Skip to Chat", use_container_width=True, key="choose_general"):
             st.session_state.customization_choice = "general"
             st.session_state.companion_mode = "chat"
+            st.rerun()
+
+
+def render_big_five_assessment():
+    """Render the Big Five (Mini-IPIP-20) personality assessment"""
+    total_questions = len(MINI_IPIP_QUESTIONS)
+    questions_answered = len(st.session_state.big_five_answers)
+    
+    # Progress bar
+    progress = questions_answered / total_questions
+    st.markdown(f"""
+    <div style="background: rgba(17, 24, 39, 0.6); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;
+                border: 1px solid rgba(59, 130, 246, 0.3);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="color: #93C5FD; font-weight: 600;">🧠 Personality Assessment (Big Five)</span>
+            <span style="color: #9CA3AF;">{questions_answered} / {total_questions}</span>
+        </div>
+        <div style="background: rgba(59, 130, 246, 0.2); border-radius: 8px; height: 8px; overflow: hidden;">
+            <div style="background: linear-gradient(90deg, #3B82F6 0%, #8B5CF6 50%, #EC4899 100%);
+                        height: 100%; width: {progress * 100}%; transition: width 0.3s ease;"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Response options for Big Five (1-5 Likert scale)
+    option_labels = ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]
+    
+    # Show 5 questions per page
+    questions_per_page = 5
+    total_pages = (total_questions + questions_per_page - 1) // questions_per_page
+    current_page = st.session_state.big_five_page
+    
+    start_idx = current_page * questions_per_page
+    end_idx = min(start_idx + questions_per_page, total_questions)
+    
+    st.markdown(f"""
+    <div style="color: #9CA3AF; font-size: 0.85rem; margin-bottom: 1rem; text-align: center;">
+        Rate how well each statement describes you.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Render current page questions
+    for i in range(start_idx, end_idx):
+        q = MINI_IPIP_QUESTIONS[i]
+        qid = q["id"]
+        trait = q["trait"]
+        trait_info = TRAIT_INFO[trait]
+        
+        st.markdown(f"""
+        <div style="background: rgba(17, 24, 39, 0.5); border: 1px solid rgba(59, 130, 246, 0.15);
+                    border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 1rem;">{trait_info['emoji']}</span>
+                <span style="color: {trait_info['color']}; font-size: 0.75rem; font-weight: 600;">
+                    {trait_info['name']}
+                </span>
+                <span style="color: #6B7280; font-size: 0.75rem;">• Q{i + 1}</span>
+            </div>
+            <div style="color: #E5E7EB; font-size: 0.95rem; line-height: 1.5;">
+                {q['text']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        current_answer = st.session_state.big_five_answers.get(qid)
+        current_index = current_answer - 1 if current_answer else None
+        
+        answer = st.radio(
+            f"Answer for Q{i+1}",
+            options=option_labels,
+            index=current_index,
+            horizontal=True,
+            label_visibility="collapsed",
+            key=f"big_five_{qid}"
+        )
+        
+        if answer:
+            score = option_labels.index(answer) + 1
+            st.session_state.big_five_answers[qid] = score
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Navigation
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:
+        if current_page > 0:
+            if st.button("← Previous", use_container_width=True, key="bf_prev"):
+                st.session_state.big_five_page -= 1
+                st.rerun()
+    
+    with col2:
+        current_page_qids = [MINI_IPIP_QUESTIONS[i]["id"] for i in range(start_idx, end_idx)]
+        all_current_answered = all(qid in st.session_state.big_five_answers for qid in current_page_qids)
+        
+        if current_page < total_pages - 1:
+            if st.button("Next →", type="primary", use_container_width=True, disabled=not all_current_answered, key="bf_next"):
+                st.session_state.big_five_page += 1
+                st.rerun()
+        else:
+            # Final page - complete button
+            all_answered = len(st.session_state.big_five_answers) == total_questions
+            if st.button("✓ Complete & See My Personality", type="primary", use_container_width=True, disabled=not all_answered, key="bf_complete"):
+                # Score the assessment
+                scores = score_mini_ipip(st.session_state.big_five_answers)
+                st.session_state.big_five_scores = scores
+                st.session_state.big_five_summary = get_personality_summary(scores)
+                
+                # Map to persona and personality
+                persona_name, _ = map_big_five_to_persona(scores)
+                st.session_state.persona = persona_name
+                
+                recommended_personality = get_recommended_personality(scores)
+                st.session_state.bot_personality = recommended_personality
+                
+                # Move to chat
+                st.session_state.companion_mode = "chat"
+                st.rerun()
+    
+    with col3:
+        if st.button("Skip →", use_container_width=True, help="Skip to general chat", key="bf_skip"):
+            st.session_state.customization_choice = "general"
+            st.session_state.companion_mode = "chat"
+            st.session_state.big_five_answers = {}
+            st.session_state.big_five_page = 0
             st.rerun()
 
 
@@ -738,7 +910,48 @@ def render_onboarding():
 
 
 def render_persona_banner():
-    """Show persona banner if customization was completed"""
+    """Show persona banner if customization was completed (COPE or Big Five)"""
+    
+    # Big Five personalization banner
+    if st.session_state.customization_choice == "big_five" and st.session_state.big_five_scores:
+        scores = st.session_state.big_five_scores
+        summary = st.session_state.big_five_summary or {}
+        persona = st.session_state.persona
+        persona_meta = get_persona_metadata(persona) if persona else {}
+        
+        # Create trait badges
+        trait_badges = ""
+        for trait_key in ["extraversion", "agreeableness", "conscientiousness", "neuroticism", "openness"]:
+            if trait_key in summary:
+                info = summary[trait_key]
+                level = info.get("level", "medium")
+                emoji = info.get("emoji", "")
+                level_label = "H" if level == "high" else ("L" if level == "low" else "M")
+                color = info.get("color", "#8B5CF6")
+                trait_badges += f'<span style="background: {color}22; color: {color}; padding: 0.2rem 0.5rem; border-radius: 8px; font-size: 0.7rem; margin-right: 0.25rem;">{emoji} {level_label}</span>'
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+                    border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 1.75rem;">{persona_meta.get('emoji', '🧠')}</span>
+                <div>
+                    <div style="color: #FFFFFF; font-weight: 600;">{persona or 'Adaptive Companion'}</div>
+                    <div style="color: #9CA3AF; font-size: 0.8rem;">Based on your Big Five personality profile</div>
+                </div>
+                <div style="margin-left: auto;">
+                    <span style="background: rgba(59, 130, 246, 0.2); color: #93C5FD; padding: 0.25rem 0.75rem;
+                                border-radius: 12px; font-size: 0.75rem;">🧠 Personality-Based</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                {trait_badges}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        return
+    
+    # COPE personalization banner
     if st.session_state.customization_choice == "customized" and st.session_state.persona:
         persona = st.session_state.persona
         persona_meta = get_persona_metadata(persona)
@@ -754,7 +967,7 @@ def render_persona_banner():
             </div>
             <div style="margin-left: auto;">
                 <span style="background: rgba(16, 185, 129, 0.2); color: #6EE7B7; padding: 0.25rem 0.75rem;
-                            border-radius: 12px; font-size: 0.75rem;">Personalized</span>
+                            border-radius: 12px; font-size: 0.75rem;">🎭 COPE-Based</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -765,8 +978,11 @@ def render_chat_ui():
     # Show persona banner if customized
     render_persona_banner()
     
+    # Determine if personality is locked (Big Five or COPE customization)
+    personality_locked = st.session_state.customization_choice in ["customized", "big_five"]
+    
     # Settings row - only show personality selector if NOT customized
-    if st.session_state.customization_choice != "customized":
+    if not personality_locked:
         col_settings1, col_settings2, col_settings3 = st.columns([2, 2, 1])
         
         with col_settings1:
@@ -965,14 +1181,21 @@ def render_chat_ui():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if st.button("🔄 Start Over (New Persona)", use_container_width=True):
-            # Reset onboarding state
+            # Reset all onboarding state (COPE + Big Five)
             st.session_state.companion_mode = "choice"
             st.session_state.customization_choice = None
+            # COPE reset
             st.session_state.cope_answers = {}
             st.session_state.cope_scores = {}
             st.session_state.persona = None
             st.session_state.persona_info = None
             st.session_state.onboarding_page = 0
+            # Big Five reset
+            st.session_state.big_five_answers = {}
+            st.session_state.big_five_scores = None
+            st.session_state.big_five_summary = None
+            st.session_state.big_five_page = 0
+            # Chat reset
             st.session_state.chat_history = []
             st.session_state.emotion_history = []
             st.session_state.bot_personality = "Friendly"
@@ -1006,6 +1229,8 @@ with page_container():
     # Route based on companion mode
     if st.session_state.companion_mode == "choice":
         render_choice_screen()
+    elif st.session_state.companion_mode == "big_five":
+        render_big_five_assessment()
     elif st.session_state.companion_mode == "onboarding":
         render_onboarding()
     elif st.session_state.companion_mode == "chat":
