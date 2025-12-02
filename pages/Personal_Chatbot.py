@@ -70,6 +70,24 @@ if "last_audio_hash" not in st.session_state:
 if "pending_tts_audio" not in st.session_state:
     st.session_state.pending_tts_audio = None
 
+# Map persona to bot personality (from onboarding)
+PERSONA_TO_PERSONALITY = {
+    "Direct Professional": "Calm",
+    "Gentle Sensitive": "Big Sister",
+    "Reflective Companion": "Deep Thinker",
+    "Energetic Companion": "Funny",
+    "Motivational Guide": "Friendly"
+}
+
+# Apply persona if onboarding was completed
+if st.session_state.get("onboarding_complete") and st.session_state.get("persona"):
+    mapped_personality = PERSONA_TO_PERSONALITY.get(
+        st.session_state.persona, 
+        st.session_state.bot_personality
+    )
+    if st.session_state.bot_personality != mapped_personality:
+        st.session_state.bot_personality = mapped_personality
+
 # Custom CSS for chat interface
 st.markdown("""
 <style>
