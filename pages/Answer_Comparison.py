@@ -4,6 +4,7 @@ Shows side-by-side comparison of Raw ChatGPT vs EmoSense Persona Response
 """
 import sys
 import os
+import re
 
 # Fix import path for Streamlit Cloud
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,6 +23,32 @@ from components.footer import render_footer
 # Configure page
 set_page_config()
 inject_global_styles()
+
+def format_markdown_to_html(text: str) -> str:
+    """
+    Convert markdown formatting to HTML for proper rendering.
+    Handles **bold**, *italic*, numbered lists, and bullet points.
+    """
+    if not text:
+        return text
+    
+    # Convert **bold** to <strong>bold</strong>
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    
+    # Convert *italic* to <em>italic</em>
+    text = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<em>\1</em>', text)
+    
+    # Convert numbered lists (1. item) to proper formatting
+    text = re.sub(r'^(\d+)\.\s+', r'<strong>\1.</strong> ', text, flags=re.MULTILINE)
+    
+    # Convert - bullet points to styled bullets
+    text = re.sub(r'^-\s+', r'• ', text, flags=re.MULTILINE)
+    
+    # Preserve line breaks
+    text = text.replace('\n', '<br>')
+    
+    return text
+
 
 # Custom CSS for comparison page
 st.markdown("""
@@ -201,6 +228,10 @@ def render_comparison_results(raw_response: str, persona_response: str, persona:
     
     persona_meta = get_persona_metadata(persona)
     
+    # Convert markdown to HTML for proper rendering
+    raw_html = format_markdown_to_html(raw_response)
+    persona_html = format_markdown_to_html(persona_response)
+    
     col1, col2 = st.columns(2)
     
     with col1:
@@ -213,7 +244,7 @@ def render_comparison_results(raw_response: str, persona_response: str, persona:
                     <p class="response-subtitle">No persona • Raw response</p>
                 </div>
             </div>
-            <div class="response-content">{raw_response}</div>
+            <div class="response-content">{raw_html}</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -227,7 +258,7 @@ def render_comparison_results(raw_response: str, persona_response: str, persona:
                     <p class="response-subtitle">{persona_meta['therapy_style']}</p>
                 </div>
             </div>
-            <div class="response-content">{persona_response}</div>
+            <div class="response-content">{persona_html}</div>
         </div>
         """, unsafe_allow_html=True)
 
