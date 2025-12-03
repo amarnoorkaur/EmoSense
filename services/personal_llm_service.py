@@ -646,6 +646,10 @@ Consider weaving this supportive approach into your response NATURALLY:
                 big_five_scores=big_five_scores
             )
             
+            # Add emoji enforcement reminder at the end of system prompt
+            if style_profile["emoji_level"] != "none":
+                system_prompt += f"\n\n🚨 CRITICAL REMINDER: User used emoji(s) in their message. You MUST include at least 1-2 emojis in your response. This is required."
+            
             # Add trend context if available
             if emotion_trend == "rising_stress":
                 system_prompt += "\n\n**Alert:** User's stress levels appear to be increasing. Soften your tone and offer extra support."
@@ -668,7 +672,16 @@ Consider weaving this supportive approach into your response NATURALLY:
                 presence_penalty=0.2
             )
             
-            return response.choices[0].message.content.strip()
+            response_text = response.choices[0].message.content.strip()
+            
+            # Post-processing: If user used emojis but response has none, add one
+            if style_profile["emoji_level"] != "none":
+                has_emoji = bool(self.EMOJI_PATTERN.search(response_text))
+                if not has_emoji:
+                    # Add a contextually appropriate emoji at the end
+                    response_text += " 💜"
+            
+            return response_text
             
         except Exception as e:
             return f"I'm having trouble connecting right now. Could you try again? (Error: {str(e)})"
