@@ -123,8 +123,8 @@ def render_landing_page():
     <div class="hero-container">
         <h1 class="hero-title">EmoSense AI</h1>
         <p class="hero-subtitle">Understand Emotions. Transform Insights.</p>
-        <p class="hero-subtitle">Next-gen emotional intelligence for humans and businesses.<br/>
-        Real-time analysis powered by BERT, BART, GPT-4o-mini, and RAG.</p>
+        <p class="hero-subtitle">Next-gen emotional intelligence with 4-layer adaptive AI.<br/>
+        Big Five • COPE • Style Matching • Real-time Emotion Detection</p>
         <div class="hero-emojis">
             😃 😐 😢 😡 🤩 😭 🤔 🫠
         </div>
@@ -137,32 +137,32 @@ def render_landing_page():
     with col1:
         st.markdown("""
         <div class="feature-card">
-            <h2 class="feature-title">💛 Personal Emotion Companion</h2>
+            <h2 class="feature-title">💜 Personal Companion</h2>
             <p class="feature-description">
-                A safe space to express yourself. Real-time emotional recognition powered by EmoSense. 
-                Chat with an AI that truly understands you. Get insights into your emotional patterns 
-                and discover personalized coping strategies.
+                A safe space to express yourself with 4-layer adaptive AI. Complete Big Five + COPE assessments 
+                for fully personalized support, or chat immediately with manual personality selection. 
+                Voice chat enabled. Real-time emotion detection with 28 emotion labels.
             </p>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("➡️ Start Personal Chatbot", key="personal", use_container_width=True, type="primary"):
+        if st.button("➡️ Start Personal Companion", key="personal", use_container_width=True, type="primary"):
             st.session_state.page = "personal_chatbot"
             st.rerun()
     
     with col2:
         st.markdown("""
         <div class="feature-card">
-            <h2 class="feature-title">📊 Business Emotional Insights</h2>
+            <h2 class="feature-title">📊 Business Buddy</h2>
             <p class="feature-description">
                 Upload customer comments or social media posts and get AI-driven summaries, 
-                emotion analysis, sentiment metrics, and category-aware insights. 
+                emotion analysis, viral signal detection, and root cause insights. 
                 Turn emotional data into actionable business intelligence.
             </p>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("➡️ Start Business Analysis", key="business", use_container_width=True, type="primary"):
+        if st.button("➡️ Start Business Buddy", key="business", use_container_width=True, type="primary"):
             st.session_state.page = "business_chatbot"
             st.rerun()
     
@@ -173,17 +173,17 @@ def render_landing_page():
     
     tech_cols = st.columns(4)
     with tech_cols[0]:
-        st.markdown('<div class="tech-badge">🤖 BERT</div>', unsafe_allow_html=True)
-        st.caption("28 Emotions")
+        st.markdown('<div class="tech-badge">🧠 Big Five</div>', unsafe_allow_html=True)
+        st.caption("Personality Adaptation")
     with tech_cols[1]:
-        st.markdown('<div class="tech-badge">📝 BART</div>', unsafe_allow_html=True)
-        st.caption("Smart Summaries")
+        st.markdown('<div class="tech-badge">🎭 COPE</div>', unsafe_allow_html=True)
+        st.caption("Coping Strategies")
     with tech_cols[2]:
-        st.markdown('<div class="tech-badge">🧠 GPT-4</div>', unsafe_allow_html=True)
-        st.caption("Deep Insights")
+        st.markdown('<div class="tech-badge">🪞 LSM</div>', unsafe_allow_html=True)
+        st.caption("Style Matching")
     with tech_cols[3]:
-        st.markdown('<div class="tech-badge">🔍 RAG</div>', unsafe_allow_html=True)
-        st.caption("Research-Backed")
+        st.markdown('<div class="tech-badge">❤️ BERT</div>', unsafe_allow_html=True)
+        st.caption("28 Emotions")
     
     st.markdown("<br/><br/>", unsafe_allow_html=True)
     
@@ -192,9 +192,9 @@ def render_landing_page():
     with stats_cols[0]:
         st.metric("Emotions Detected", "28", help="GoEmotions dataset labels")
     with stats_cols[1]:
-        st.metric("Content Categories", "9", help="Context-aware classification")
+        st.metric("Adaptation Layers", "4", help="Big Five + COPE + LSM + Emotion")
     with stats_cols[2]:
-        st.metric("Research Sources", "6+", help="HubSpot, Zendesk, Forrester & more")
+        st.metric("Personality Dimensions", "5+14", help="Big Five traits + COPE scales")
     
     st.markdown("<br/>", unsafe_allow_html=True)
     
