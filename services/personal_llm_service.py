@@ -313,15 +313,15 @@ class PersonalLLMService:
         else:
             instructions += "- Use balanced, natural language. Be warm but not overly casual.\n"
         
-        # Emoji matching
+        # Emoji matching - CRITICAL: Model often ignores this, make it explicit
         if style_profile["emoji_level"] == "none":
-            instructions += "- Do NOT use emojis.\n"
+            instructions += "- Do NOT use any emojis in your response.\n"
         elif style_profile["emoji_level"] == "low":
-            instructions += "- Use 1 emoji maximum, naturally placed.\n"
+            instructions += "- MUST include 1-2 emojis in your response. User used emojis, so you should too.\n"
         elif style_profile["emoji_level"] == "medium":
-            instructions += "- Use 2-3 emojis naturally throughout response.\n"
+            instructions += "- MUST include 2-3 emojis throughout your response. Match their expressive emoji style!\n"
         else:
-            instructions += "- Use 3-4 emojis to match their expressive style.\n"
+            instructions += "- MUST include 3-5 emojis in your response! User loves emojis, match their energy! 💜\n"
         
         # Slang matching
         if style_profile["slang_level"] == "high":
@@ -352,7 +352,7 @@ class PersonalLLMService:
         if tone in self.TONE_RESPONSES:
             instructions += f"- Tone detected: {tone}. Response approach: {self.TONE_RESPONSES[tone]}\n"
         
-        instructions += "\nNEVER mention that you're matching their style. Just do it naturally."
+        instructions += "\n**IMPORTANT:** Follow the emoji and style instructions above. If user used emojis, YOU MUST use emojis too. Never mention you're matching their style."
         
         return instructions
     
