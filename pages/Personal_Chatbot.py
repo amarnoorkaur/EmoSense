@@ -102,9 +102,6 @@ if "conversation_mode" not in st.session_state:
 if "bot_personality" not in st.session_state:
     st.session_state.bot_personality = "Friendly"
 
-if "show_emotion_analysis" not in st.session_state:
-    st.session_state.show_emotion_analysis = False
-
 if "last_emotion_data" not in st.session_state:
     st.session_state.last_emotion_data = None
 
@@ -1091,7 +1088,7 @@ def render_chat_ui():
     
     # Settings row - only show personality selector if NOT customized
     if not personality_locked:
-        col_settings1, col_settings2, col_settings3 = st.columns([2, 2, 1])
+        col_settings1, col_settings2 = st.columns(2)
         
         with col_settings1:
             mode = st.selectbox(
@@ -1108,27 +1105,14 @@ def render_chat_ui():
                 key="personality_selector"
             )
             st.session_state.bot_personality = personality
-        
-        with col_settings3:
-            st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-            show_emotions = st.checkbox("Show emotions", value=st.session_state.show_emotion_analysis)
-            st.session_state.show_emotion_analysis = show_emotions
     else:
         # Just show mode selector for customized users
-        col_settings1, col_settings2 = st.columns([3, 1])
-        
-        with col_settings1:
-            mode = st.selectbox(
-                "🎭 Conversation Mode",
-                ["Casual Chat", "Comfort Me", "Help Me Reflect", "Hype Me Up", "Just Listen"],
-                key="mode_selector"
-            )
-            st.session_state.conversation_mode = mode
-        
-        with col_settings2:
-            st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
-            show_emotions = st.checkbox("Show emotions", value=st.session_state.show_emotion_analysis)
-            st.session_state.show_emotion_analysis = show_emotions
+        mode = st.selectbox(
+            "🎭 Conversation Mode",
+            ["Casual Chat", "Comfort Me", "Help Me Reflect", "Hype Me Up", "Just Listen"],
+            key="mode_selector"
+        )
+        st.session_state.conversation_mode = mode
     
     spacer("sm")
     
