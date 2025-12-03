@@ -438,9 +438,9 @@ def render_chat_history():
     if not st.session_state.chat_history:
         st.markdown("""
         <div class="premium-card fade-in" style="text-align: center; padding: 2.5rem;">
-            <div style="font-size: 2.4rem; margin-bottom: 0.5rem;">??</div>
+            <div style="font-size: 2.4rem; margin-bottom: 0.5rem;">💬</div>
             <h3 style="color: #E5E7EB; margin: 0 0 0.5rem;">Start a conversation</h3>
-            <p style="margin: 0; color: #A8A9B3;">Type anything below and I will respond with empathy.</p>
+            <p style="margin: 0; color: #A8A9B3;">Type below and press Enter — I'm here to listen.</p>
         </div>
         """, unsafe_allow_html=True)
         return
@@ -1134,27 +1134,21 @@ def render_chat_ui():
     # Chat history display
     render_chat_history()
     
-    spacer("md")
+    spacer("sm")
     
-    # Input area - use chat_input for Enter key support
-    col_input, col_buttons = st.columns([4, 1])
-    
-    with col_buttons:
-        # Voice input
-        audio_input = st.audio_input(
-            "🎙️ Voice",
-            key="inline_voice_input",
-            label_visibility="collapsed"
-        )
-        
-        if st.button("🗑️ Clear", use_container_width=True):
+    # Voice input row (compact)
+    col_voice, col_clear = st.columns([3, 1])
+    with col_voice:
+        audio_input = st.audio_input("🎙️ Voice input", key="inline_voice_input", label_visibility="collapsed")
+    with col_clear:
+        if st.button("🗑️ Clear Chat", use_container_width=True, type="secondary"):
             st.session_state.chat_history = []
             st.session_state.emotion_history = []
             st.session_state.last_emotion_data = None
             st.rerun()
     
     # Chat input at the bottom - Enter key sends automatically
-    user_input = st.chat_input("Type a message and press Enter... I'm here to listen. 💜")
+    user_input = st.chat_input("Type a message and press Enter... 💜")
     
     # Handle text send (Enter key triggers this automatically)
     if user_input and user_input.strip():
@@ -1203,40 +1197,36 @@ def render_chat_ui():
     
     spacer("md")
     
-    # Reset option
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # Safety reminder
+    st.markdown("""
+    <div style="background: rgba(138, 92, 246, 0.1); border-left: 3px solid #8A5CF6; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+        <p style="color: #A8A9B3; font-size: 0.85rem; margin: 0;">
+            <strong style="color: #FFFFFF;">💜 Remember:</strong> EmoSense is an AI companion for emotional support, 
+            not a replacement for professional mental health care.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Small reset option at the bottom
+    spacer("sm")
+    col1, col2, col3 = st.columns([2, 1, 2])
     with col2:
-        if st.button("🔄 Start Over (New Persona)", use_container_width=True):
-            # Reset all onboarding state (COPE + Big Five)
+        if st.button("🔄 Reset Persona", use_container_width=True, type="secondary", help="Retake personality assessments"):
             st.session_state.companion_mode = "choice"
             st.session_state.customization_choice = None
-            # COPE reset
             st.session_state.cope_answers = {}
             st.session_state.cope_scores = {}
             st.session_state.persona = None
             st.session_state.persona_info = None
             st.session_state.onboarding_page = 0
-            # Big Five reset
             st.session_state.big_five_answers = {}
             st.session_state.big_five_scores = None
             st.session_state.big_five_summary = None
             st.session_state.big_five_page = 0
-            # Chat reset
             st.session_state.chat_history = []
             st.session_state.emotion_history = []
             st.session_state.bot_personality = "Friendly"
             st.rerun()
-    
-    # Safety reminder
-    st.markdown("""
-    <div style="background: rgba(138, 92, 246, 0.1); border-left: 3px solid #8A5CF6; padding: 1rem; border-radius: 8px; margin-top: 2rem;">
-        <p style="color: #A8A9B3; font-size: 0.875rem; margin: 0;">
-            <strong style="color: #FFFFFF;">💜 Remember:</strong> EmoSense Companion is an AI tool for emotional support and reflection, 
-            not a replacement for professional mental health care. If you're in crisis, please reach out to a mental health 
-            professional or crisis hotline immediately.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
 
 
 # ============================================================
