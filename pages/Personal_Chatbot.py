@@ -105,9 +105,6 @@ if "bot_personality" not in st.session_state:
 if "last_emotion_data" not in st.session_state:
     st.session_state.last_emotion_data = None
 
-if "clear_input" not in st.session_state:
-    st.session_state.clear_input = False
-
 # Voice chat session state
 if "voice_chat_history" not in st.session_state:
     st.session_state.voice_chat_history = []
@@ -1139,93 +1136,30 @@ def render_chat_ui():
     
     spacer("md")
     
-    # Input area with text and voice options
-    col_input, col_mic, col_buttons = st.columns([3.5, 0.5, 1])
+    # Input area - use chat_input for Enter key support
+    col_input, col_buttons = st.columns([4, 1])
     
-    with col_input:
-        if "user_message_input" not in st.session_state:
-            st.session_state.user_message_input = ""
-        
-        if st.session_state.clear_input:
-            st.session_state.user_message_input = ""
-            st.session_state.clear_input = False
-        
-        user_input = st.text_area(
-            "Message",
-            value=st.session_state.user_message_input,
-            height=100,
-            placeholder="Type or click 🎙️ to talk... I'm here to listen. 💜",
-            label_visibility="collapsed",
-            key="personal_chat_input_box"
-        )
-    
-    with col_mic:
-        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+    with col_buttons:
+        # Voice input
         audio_input = st.audio_input(
-            "🎙️",
+            "🎙️ Voice",
             key="inline_voice_input",
             label_visibility="collapsed"
         )
-    
-    with col_buttons:
-        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
         
-        send_button = st.button("💬 Send", type="primary")
-        
-        if st.button("🔍 Analyze", help="Explicitly analyze emotions in your message"):
-            if user_input.strip():
-                with st.spinner("Understanding your emotions..."):
-                    predicted_emotions, probabilities = predict_emotions(user_input, threshold=0.3)
-                    
-                    if llm_service:
-                        reflection = llm_service.generate_emotion_reflection(
-                            user_input,
-                            predicted_emotions,
-                            probabilities,
-                            st.session_state.bot_personality
-                        )
-                    else:
-                        if predicted_emotions:
-                            emotion_list = ", ".join([f"{e.capitalize()}" for e in predicted_emotions[:3]])
-                            reflection = f"I sense {emotion_list} in your words. These emotions are valid. 💜"
-                        else:
-                            reflection = "Your message feels emotionally balanced. 🌟"
-                    
-                    timestamp = datetime.datetime.now().strftime("%I:%M %p")
-                    emotion_context = {"emotions": predicted_emotions, "probabilities": probabilities}
-                    
-                    st.session_state.chat_history.append({
-                        "role": "user", "content": user_input, "timestamp": timestamp, "emotion_data": emotion_context
-                    })
-                    st.session_state.chat_history.append({
-                        "role": "assistant", "content": reflection, "timestamp": timestamp
-                    })
-                    st.session_state.chat_history = st.session_state.chat_history[-20:]
-                    
-                    st.session_state.emotion_history.append({
-                        "timestamp": datetime.datetime.now(), "emotions": predicted_emotions,
-                        "probabilities": probabilities, "message": user_input
-                    })
-                    st.session_state.emotion_history = st.session_state.emotion_history[-10:]
-                    
-                    st.session_state.clear_input = True
-                    st.rerun()
-        
-        if st.button("🗑️ Clear"):
+        if st.button("🗑️ Clear", use_container_width=True):
             st.session_state.chat_history = []
             st.session_state.emotion_history = []
             st.session_state.last_emotion_data = None
-            st.session_state.clear_input = True
             st.rerun()
     
-    # Handle text send
-    if send_button and user_input.strip():
-        message_to_send = user_input
-        st.session_state.user_message_input = ""
-        st.session_state.clear_input = True
-        
+    # Chat input at the bottom - Enter key sends automatically
+    user_input = st.chat_input("Type a message and press Enter... I'm here to listen. 💜")
+    
+    # Handle text send (Enter key triggers this automatically)
+    if user_input and user_input.strip():
         with st.spinner("💭 Thinking..."):
-            handle_user_message(message_to_send)
+            handle_user_message(user_input)
         st.rerun()
     
     # Handle voice input
