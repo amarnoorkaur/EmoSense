@@ -426,47 +426,6 @@ with page_container():
     
     spacer("lg")
     
-    # Model information (3 columns)
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        <div class="glass-card" style="padding: 24px;">
-            <h4 style="color: #8A5CF6; margin-bottom: 1rem;">🤖 BERT Model</h4>
-            <p style="color: #E5E7EB; line-height: 1.6; font-size: 0.85rem;">
-                <strong>Type:</strong> Transformer<br>
-                <strong>Model:</strong> Amarnoor/emotion-bert-emosense<br>
-                <strong>Strengths:</strong> Context understanding, nuanced language
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="glass-card" style="padding: 24px;">
-            <h4 style="color: #4BB8FF; margin-bottom: 1rem;">📊 Logistic Regression</h4>
-            <p style="color: #E5E7EB; line-height: 1.6; font-size: 0.85rem;">
-                <strong>Type:</strong> Classical ML (TF-IDF)<br>
-                <strong>Features:</strong> Word frequency patterns<br>
-                <strong>Strengths:</strong> Fast, interpretable, lightweight
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown("""
-        <div class="glass-card" style="padding: 24px;">
-            <h4 style="color: #10B981; margin-bottom: 1rem;">⚡ SVM Model</h4>
-            <p style="color: #E5E7EB; line-height: 1.6; font-size: 0.85rem;">
-                <strong>Type:</strong> Support Vector Machine<br>
-                <strong>Features:</strong> TF-IDF with kernel trick<br>
-                <strong>Strengths:</strong> Good generalization, robust margins
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    spacer("lg")
-    
     st.markdown('</div>', unsafe_allow_html=True)
 
 # Footer
